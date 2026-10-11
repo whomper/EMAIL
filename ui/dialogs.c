@@ -699,7 +699,7 @@ static void show_page(short p, int draw)
 			continue;
 		if (page_of[i] == p) {
 			tree[i].ob_flags &= ~HIDETREE;
-			if (tree[i].ob_type == G_FTEXT)
+			if (tree[i].ob_type == G_FTEXT || tree[i].ob_type == G_FBOXTEXT)
 				tree[i].ob_flags |= EDITABLE;
 		} else {
 			tree[i].ob_flags |= HIDETREE;

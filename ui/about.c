@@ -175,7 +175,7 @@ void dlg_about(void)
 	if (dw > desk_w - 2 * cw)
 		dw = desk_w - 2 * cw;
 	dh = lh + ih + lh / 2 + lh + (lh + lh / 2) + (lh + lh / 2) + lh / 4 + lh +
-	     (lh + lh / 2) + (lh + lh / 2) + 2 * lh + lh / 2 + bh + lh;
+	     (lh + lh / 2) + (lh + lh / 2) + lh / 2 + bh + lh;
 	if (dh > desk_h - 4)
 		dh = desk_h - 4;
 	dx = desk_x + (desk_w - dw) / 2;
@@ -227,24 +227,6 @@ void dlg_about(void)
 	y += lh + lh / 2;
 	center(y, conn, 0);
 	y += lh + lh / 2;
-	/* the fine print, in the small system font where there is room */
-	{
-		short scw, sch, big = ch >= 16, keep_cw = cw, keep_ch = ch, step;
-		if (big) {
-			vst_height(vdi_h, 6, &scw, &sch);
-			cw = scw;
-			ch = sch;
-		}
-		step = big ? ch + 3 : lh;
-		center(y, "Parts from Claude ST.", 0);
-		y += step;
-		center(y, "Atari is a trademark of Atari Interactive.", 0);
-		if (big) {
-			cw = keep_cw;
-			ch = keep_ch;
-			font_apply();
-		}
-	}
 	button(dx + (dw - bw) / 2, by, bw, bh, "OK");
 	graf_mouse(M_ON, 0);
 	wait_up();

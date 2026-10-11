@@ -292,8 +292,12 @@ brown by depth. With 256 colours it sets its own soft shades (and puts
 the palette back when it quits). Settings > Look switches them off;
 monochrome screens look as they always did.
 
-**Settings** (Options > Settings): your time zone in minutes east of UTC
-(Israel: 120 in winter, 180 in summer), automatic checking every N
+**Settings** (Options > Settings): your time zone, chosen by name from a
+list (Asia/Jerusalem, Europe/London, ...) as in ECal; summer time follows
+by itself. The first time, EMail fills it in from the machine: TZ in the
+environment (MiNT, MagiC; a name like Europe/Paris or POSIX like
+IST-2IDT), MiNT's /etc/timezone, or the minutes an older EMAIL.INF kept;
+otherwise UTC. It is kept as TIMEZONE= in EMAIL.INF. Also automatic checking every N
 minutes, how many messages to load at a time, whether read messages stay on disk
 after quitting, the protocol log, and the keyboard EMail starts with.
 

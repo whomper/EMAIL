@@ -254,6 +254,32 @@ static void forget_accounts(void)
 		free(accts[--naccts]);
 }
 
+/* time zones by name, like ECal: summer time by the date, and the
+   machine's zone found from a POSIX TZ */
+static void t_zone(void)
+{
+	char dir[64], path[100];
+	snprintf(dir, sizeof(dir), "/tmp/mail-unit-tz.%d", (int)getpid());
+	mkdir(dir, 0755);
+	snprintf(path, sizeof(path), "%s/EMAIL.INF", dir);
+	pf_save(path, "[OPTIONS]\r\nTIMEZONE=Asia/Jerusalem\r\n", 34);
+	forget_accounts();
+	store_init(dir);
+	CHECK(!strcmp(opt.tzname, "Asia/Jerusalem"), "TIMEZONE read: %s", opt.tzname);
+	CHECK(zone_offset_at(1783000000UL) == 180, "Jerusalem in July 2026: +3");	/* 2026-07-02 */
+	CHECK(zone_offset_at(1767225600UL) == 120, "Jerusalem in January: +2");	/* 2026-01-01 */
+	pf_save(path, "[OPTIONS]\r\n", 11);
+	setenv("TZ", "IST-2IDT,M3.4.4/26,M10.5.0", 1);
+	forget_accounts();
+	store_init(dir);
+	CHECK(!strcmp(opt.tzname, "Asia/Jerusalem"), "TZ=IST-2IDT found: %s", opt.tzname);
+	setenv("TZ", "Europe/Paris", 1);
+	forget_accounts();
+	store_init(dir);
+	CHECK(!strcmp(opt.tzname, "Europe/Paris"), "TZ=Europe/Paris found: %s", opt.tzname);
+	unsetenv("TZ");
+}
+
 /* EMAIL.INF: names in capitals, a note, the setting and an empty line;
    read back the same, a password with " ;" and a two-line signature too */
 static void t_inf(void)
@@ -270,12 +296,15 @@ static void t_inf(void)
 			"user=a\r\npass=x ;y\r\nsignature=Dana\\nTel Aviv\r\n";
 		pf_save(path, old, (long)strlen(old));
 	}
+	unsetenv("TZ");			/* no machine zone: the old minutes decide */
 	CHECK(store_init(dir) == 1, "old lower-case EMAIL.INF read");
+	CHECK(opt.tzname[0] && zone_offset_now() == 180, "TZ=180 became a zone: %s", opt.tzname);
 	CHECK(!strcmp(accts[0]->pass, "x ;y"), "password with ' ;' kept: %s", accts[0]->pass);
 	CHECK(store_save_settings() == 0, "settings saved");
 	inf = pf_load(path, &len);
 	CHECK(inf && strstr(inf, "\r\n[OPTIONS]\r\n") && strstr(inf, "\r\n[ACCOUNT]\r\n"), "sections in capitals");
-	CHECK(inf && strstr(inf, "; your time zone") && strstr(inf, "\r\nTZ=180\r\n\r\n; "), "note, TZ=, empty line");
+	CHECK(inf && strstr(inf, "; your time zone") && strstr(inf, "\r\nTIMEZONE=") && !strstr(inf, "\r\nTZ="),
+	      "note, TIMEZONE=, empty line");
 	CHECK(inf && strstr(inf, "\r\nPASS={E}") && !strstr(inf, "x ;y"), "PASS written encrypted");
 	CHECK(inf && strstr(inf, "\r\nSIGNATURE=Dana\\nTel Aviv\r\n"), "SIGNATURE written");
 	/* every setting line: a note above, an empty line below */
@@ -289,7 +318,7 @@ static void t_inf(void)
 	forget_accounts();		/* store_init adds to what is loaded */
 	store_init(dir);
 	a = accts[0];
-	CHECK(!strcmp(a->pass, "x ;y") && !strcmp(a->signature, "Dana\nTel Aviv") && opt.tz == 180,
+	CHECK(!strcmp(a->pass, "x ;y") && !strcmp(a->signature, "Dana\nTel Aviv") && zone_offset_now() == 180,
 	      "read back from the new EMAIL.INF");
 	CHECK(!store_lost_passwords, "EMAIL.KEY opens them");
 	/* another key: the password is gone, and EMail says so */
@@ -322,6 +351,7 @@ static void t_inf(void)
 int main(void)
 {
 	t_num();
+	t_zone();
 	t_inf();
 	t_charset();
 	t_mime();

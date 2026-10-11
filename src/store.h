@@ -90,6 +90,7 @@ typedef struct {
 	short hebfont;		/* where the font has its Hebrew letters: HEB_* */
 	short falcon;		/* Falcon mode: TLS on the Atari (and its DSP), no gateway */
 	short dsp;		/* Falcon mode may use the DSP (else the 68030 does it all) */
+	char tzname[40];	/* the time zone, an IANA name ("Asia/Jerusalem") */
 	short colour;		/* colours, on screens with 16 or more */
 	char workdir[200];
 } OPTIONS;
@@ -119,6 +120,11 @@ extern ACCOUNT *accts[MAXACCT];
 extern short naccts;
 
 /* settings */
+/* the time zone: minutes east of UTC now, or at a moment (seconds since
+   1970, UTC), summer time included */
+int  zone_offset_now(void);
+int  zone_offset_at(unsigned long utc);	/* at a UTC time in seconds */
+long zone_utc_now(void);		/* minutes since 1970, UTC */
 int  store_init(const char *workdir);	/* loads EMAIL.INF (creates dirs) */
 int  store_save_settings(void);
 /* EMAIL.INF had passwords that EMAIL.KEY can't open (a lost or new key):

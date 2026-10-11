@@ -105,7 +105,7 @@ static void date_header(char *out, int size)
 	static const char *mn[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
 				    "Sep", "Oct", "Nov", "Dec" };
 	PFTIME t;
-	long tz = opt.tz;
+	long tz = zone_offset_now();
 	pf_now(&t);
 	snprintf(out, size, "%s, %d %s %d %02d:%02d:%02d %c%02ld%02ld",
 		 wd[days_civil(t.year, t.mon, t.day) % 7], t.day, mn[(t.mon + 11) % 12], t.year,

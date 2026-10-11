@@ -99,6 +99,11 @@ void pf_entropy(unsigned char *buf, int n)
 		abort();
 }
 
+const char *pf_getenv(const char *name)
+{
+	return getenv(name);
+}
+
 unsigned long pf_ms(void)
 {
 	struct timespec ts;

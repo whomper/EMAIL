@@ -10,6 +10,7 @@
 #include "../src/bidi.h"
 #include "../src/util.h"
 #include "../src/charset.h"
+#include "../src/tz.h"
 
 #define DMAX 72
 #define TMAX 24
@@ -606,7 +607,7 @@ int dlg_account(ACCOUNT *a)
  * black bar) and that part's settings on the right: ticks (a box that is
  * crossed when on, clicked on the box or its words) and framed fields. */
 
-static char s_tz[6], s_check[4], s_page[5], s_wrap[3];
+static char s_zone[40], s_zlabel[42], s_check[4], s_page[5], s_wrap[3];
 static short s_on[6];			/* keep, log, hebrew, falcon, dsp, colour */
 enum { T_KEEP, T_LOG, T_HEB, T_FALCON, T_DSP, T_COLOUR };
 
@@ -728,6 +729,76 @@ static short first_edit(void)
 	return 0;
 }
 
+/* the zone button: its name, the offset now, and a down arrow */
+static short zone_btn;
+
+static void zone_label(void)
+{
+	const TZONE *z = tz_find(s_zone);
+	char off[16];
+	short n, o;
+	if (!z)
+		z = tz_utc();
+	tz_label(z, zone_utc_now(), off, sizeof(off));
+	memset(s_zlabel, ' ', 28);
+	s_zlabel[28] = 0;
+	n = (short)strlen(z->name);
+	o = (short)strlen(off);
+	if (n > 25 - o)
+		n = (short)(25 - o);
+	memcpy(s_zlabel + 1, z->name, n);
+	memcpy(s_zlabel + 26 - o, off, o);
+	s_zlabel[27] = 2;		/* the system font's down arrow */
+}
+
+static short pick_w(const char *title, const char **items, short n, short lw);
+static short pick_from;		/* the row a picker starts on */
+static OBJECT keep_tree[DMAX];
+static TEDINFO keep_ted[TMAX];
+static short keep_page[DMAX], keep_n[4];
+static GRECT pick_area;		/* where the last picker was */
+
+/* every zone with its offset now; the one chosen goes into s_zone */
+static void zone_pick(void)
+{
+	static char lab[120][40];
+	static const char *items[120];
+	long now = zone_utc_now();
+	short n = (short)tz_count(), i, sel = 0;
+	if (n > 120)
+		n = 120;
+	for (i = 0; i < n; i++) {
+		const TZONE *z = tz_index(i);
+		char off[16];
+		tz_label(z, now, off, sizeof(off));
+		snprintf(lab[i], sizeof(lab[i]), "%-28s %s", z->name, off);
+		items[i] = lab[i];
+		if (!strcmp(z->name, s_zone))
+			sel = i;
+	}
+	/* the picker builds in the one tree: keep the settings aside */
+	memcpy(&keep_tree, tree, sizeof(keep_tree));
+	memcpy(&keep_ted, ted, sizeof(keep_ted));
+	memcpy(&keep_page, page_of, sizeof(keep_page));
+	keep_n[0] = nobj;
+	keep_n[1] = nted;
+	keep_n[2] = last_child;
+	keep_n[3] = npw;
+	pick_from = sel;
+	i = pick_w("Your time zone", items, n, 38);
+	pick_from = 0;
+	memcpy(tree, &keep_tree, sizeof(keep_tree));
+	memcpy(ted, &keep_ted, sizeof(keep_ted));
+	memcpy(page_of, &keep_page, sizeof(keep_page));
+	nobj = keep_n[0];
+	nted = keep_n[1];
+	last_child = keep_n[2];
+	npw = keep_n[3];
+	if (i >= 0)
+		str_copy(s_zone, tz_index(i)->name, sizeof(s_zone));
+	zone_label();
+}
+
 /* the dialog stays open while ticks and pages change */
 static short settings_run(short pages_box)
 {
@@ -764,6 +835,14 @@ static short settings_run(short pages_box)
 				show_page(k, 1);
 			continue;
 		}
+		if (r == zone_btn) {
+			/* the zone list over the settings, then the settings again */
+			tree[r].ob_state &= ~SELECTED;
+			zone_pick();
+			win_redraw_area(&pick_area);	/* what the list covered */
+			objc_draw(tree, 0, 8, x, y, w, h);
+			continue;
+		}
 		break;
 	}
 	form_dial(FMD_FINISH, x, y, w, h);
@@ -780,7 +859,12 @@ static void settings_begin(short w, short h)
 	npages = 0;
 	adding_page = 0;
 	memset(page_of, 0, sizeof(page_of));
-	snprintf(s_tz, sizeof(s_tz), "%d", opt.tz);
+}
+
+/* the values the dialog edits, from the options */
+static void settings_load(void)
+{
+	str_copy(s_zone, opt.tzname, sizeof(s_zone));
 	snprintf(s_check, sizeof(s_check), "%d", opt.check);
 	snprintf(s_page, sizeof(s_page), "%d", opt.page);
 	snprintf(s_wrap, sizeof(s_wrap), "%d", opt.wrap);
@@ -827,8 +911,10 @@ static void part_look(short x, short y)
 static void part_connection(short x, short y)
 {
 	rows_at(y);
-	d_add(G_STRING, 0, 0, (long)"Time zone, minutes from UTC", x, ROW(0), 27, 1);
-	d_field(x + FX, ROW(0), s_tz, 5, 'X');
+	d_add(G_STRING, 0, 0, (long)"Time zone", x, ROW(0), 9, 1);
+	zone_label();
+	zone_btn = d_add(G_BOXTEXT, TOUCHEXIT, 0, (long)d_ted(s_zlabel, 0, 0x1180), x + 11, ROW(0), 29, 1);
+	((TEDINFO *)tree[zone_btn].ob_spec)->te_thickness = -1;
 	d_tick(x, ROW(1), "Falcon mode: TLS on this Atari", T_FALCON);
 	d_add(G_STRING, 0, 0, (long)"off: plain, through the Pi gateway", x + 3, ROW(2), 34, 1);
 	d_tick(x + 3, ROW(3), "Use the DSP for the signatures", T_DSP);
@@ -877,14 +963,16 @@ static short settings_sidebar(short *ok)
 	return box;
 }
 
+
 int dlg_settings(void)
 {
 	short ok, box, r;
+	settings_load();
 	box = settings_sidebar(&ok);
 	r = settings_run(box);
 	if (r != ok)
 		return 0;
-	opt.tz = (short)atoi(s_tz);
+	str_copy(opt.tzname, s_zone, sizeof(opt.tzname));
 	opt.check = (short)atoi(s_check);
 	opt.page = (short)atoi(s_page);
 	if (opt.page < 20)
@@ -940,6 +1028,10 @@ static short pick_w(const char *title, const char **items, short n, short lw)
 	short first = 0, cur = -1, row[PROWS], box, b_up, b_down, b_ok, b_cancel, f_count;
 	short x, y, w, h, bx, by, r, i, result = -1, tw = (short)strlen(title);
 
+	if (pick_from > 0 && pick_from < n) {
+		cur = pick_from;
+		first = cur - cur % PROWS;
+	}
 	if (lw > PW)
 		lw = PW;
 	if (lw < 22)
@@ -1046,6 +1138,10 @@ static short pick_w(const char *title, const char **items, short n, short lw)
 	form_dial(FMD_FINISH, x, y, w, h);
 	wind_update(2);
 	wind_update(END_UPDATE);
+	pick_area.x = x;
+	pick_area.y = y;
+	pick_area.w = w;
+	pick_area.h = h;
 	return result >= 0 ? result : -1;
 }
 

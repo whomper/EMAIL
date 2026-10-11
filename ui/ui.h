@@ -62,6 +62,7 @@ void win_hover(short mx, short my);
 void win_focus(WIN *w);
 void win_relayout(void);			/* after a font change */
 void win_redraw_all(void);
+void win_redraw_area(GRECT *area);	/* now, under a dialog that closed */
 extern short main_h;
 void main_open(void);
 void main_close(void);

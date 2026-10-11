@@ -395,6 +395,11 @@ void win_redraw(WIN *w, GRECT *area)
 	wind_update(END_UPDATE);
 }
 
+void win_redraw_area(GRECT *area)
+{
+	main_redraw(area);
+}
+
 void win_redraw_all(void)
 {
 	main_redraw(0);

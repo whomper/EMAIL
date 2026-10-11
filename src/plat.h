@@ -41,6 +41,9 @@ typedef struct {
 } PFTIME;
 
 void pf_now(PFTIME *t);		/* local wall clock */
+/* a variable from the program's environment (TZ under MiNT or MagiC),
+   or NULL */
+const char *pf_getenv(const char *name);
 unsigned long pf_ms(void);	/* monotonic milliseconds (5 ms steps on TOS) */
 void pf_debug(const char *s);	/* emulator console / stderr */
 /* raw unpredictable bytes (timer jitter on the Atari, /dev/urandom on

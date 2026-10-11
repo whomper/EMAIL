@@ -93,6 +93,22 @@ void pf_now(PFTIME *t)
 	t->sec = (tm & 31) * 2;
 }
 
+/* the environment: NAME=value strings after each other, an empty one
+   last, at p_env in the basepage (offset 0x2C) */
+const char *pf_getenv(const char *name)
+{
+	const char *e = *(const char **)((const char *)_BasePage + 0x2C);
+	size_t n = strlen(name);
+	if (!e)
+		return 0;
+	while (*e) {
+		if (!strncmp(e, name, n) && e[n] == '=')
+			return e + n + 1;
+		e += strlen(e) + 1;
+	}
+	return 0;
+}
+
 unsigned long pf_ms(void)
 {
 	return tos_hz200() * 5;

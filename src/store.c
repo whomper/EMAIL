@@ -10,6 +10,7 @@
 #include "plat.h"
 #include "store.h"
 #include "secret.h"
+#include "tz.h"
 #include "charset.h"
 #include "mime.h"
 #include "util.h"
@@ -24,9 +25,13 @@ static char inf_path[220], mail_dir[220];
 
 /* ---------------- settings ---------------- */
 
+static int tz_given;		/* EMAIL.INF had the old TZ= minutes */
+
 static void defaults(void)
 {
 	opt.tz = 0;
+	opt.tzname[0] = 0;
+	tz_given = 0;
 	opt.check = 0;
 	opt.page = 100;
 	opt.keepcache = 1;
@@ -284,10 +289,124 @@ static void set_acct(ACCOUNT *a, const char *k, const char *v)
 	else if (!strcmp(k, "dsmtppass")) unseal(a->dsmtppass, tmp, sizeof(a->dsmtppass));
 }
 
+/* ---------------- the time zone ---------------- */
+
+
+static const TZONE *zone(void)
+{
+	static char name[40];
+	static const TZONE *z;
+	if (!z || strcmp(name, opt.tzname)) {
+		z = tz_find(opt.tzname);
+		str_copy(name, opt.tzname, sizeof(name));
+		if (!z)
+			z = tz_utc();
+	}
+	return z;
+}
+
+int zone_offset_at(unsigned long utc)
+{
+	return tz_offset(zone(), (CTIME)(utc / 60));
+}
+
+long zone_utc_now(void)
+{
+	PFTIME t;
+	pf_now(&t);
+	return tz_to_utc(zone(), ct_make(t.year, t.mon, t.day, t.hour, t.min));
+}
+
+int zone_offset_now(void)
+{
+	return tz_offset(zone(), zone_utc_now());
+}
+
+/* the zone whose clock shows `minutes` east of UTC now, the usual one
+   of the places sharing it first */
+static const char *zone_for_offset(int minutes)
+{
+	static const char *const usual[] = {
+		"Asia/Jerusalem", "Europe/London", "Europe/Berlin", "America/New_York",
+		"America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/Moscow",
+		"Asia/Tokyo", "Australia/Sydney", 0
+	};
+	PFTIME t;
+	int i;
+	pf_now(&t);
+	for (i = 0; usual[i]; i++) {
+		const TZONE *z = tz_find(usual[i]);
+		if (z && tz_offset(z, tz_to_utc(z, ct_make(t.year, t.mon, t.day, t.hour, t.min))) == minutes)
+			return usual[i];
+	}
+	for (i = 0; tz_index(i); i++) {
+		const TZONE *z = tz_index(i);
+		if (tz_offset(z, tz_to_utc(z, ct_make(t.year, t.mon, t.day, t.hour, t.min))) == minutes)
+			return z->name;
+	}
+	return 0;
+}
+
+/* a POSIX TZ ("IST-2IDT,M3.4.4/26,M10.5.0"): the zone its abbreviation
+   names, else one with its offset */
+static const char *zone_from_posix(const char *s)
+{
+	static const char *const abbr[][2] = {
+		{ "IST", "Asia/Jerusalem" }, { "IDT", "Asia/Jerusalem" }, { "GMT", "Europe/London" },
+		{ "BST", "Europe/London" }, { "CET", "Europe/Berlin" }, { "MET", "Europe/Berlin" },
+		{ "EET", "Europe/Athens" }, { "MSK", "Europe/Moscow" }, { "EST", "America/New_York" },
+		{ "CST", "America/Chicago" }, { "MST", "America/Denver" }, { "PST", "America/Los_Angeles" },
+		{ "JST", "Asia/Tokyo" }, { "AEST", "Australia/Sydney" }, { "UTC", "UTC" }, { 0, 0 }
+	};
+	char name[8];
+	int n = 0, i, sign = 1, h = 0, m = 0;
+	while (n < 7 && ((s[n] >= 'A' && s[n] <= 'Z') || (s[n] >= 'a' && s[n] <= 'z'))) {
+		name[n] = s[n];
+		n++;
+	}
+	name[n] = 0;
+	for (i = 0; abbr[i][0]; i++)
+		if (!strcasecmp(name, abbr[i][0]))
+			return abbr[i][1];
+	s += n;
+	if (*s == '-' || *s == '+')
+		sign = *s++ == '-' ? 1 : -1;	/* POSIX counts west: "-2" is east */
+	while (*s >= '0' && *s <= '9')
+		h = h * 10 + *s++ - '0';
+	if (*s == ':')
+		for (s++; *s >= '0' && *s <= '9'; s++)
+			m = m * 10 + *s - '0';
+	return n ? zone_for_offset(sign * (h * 60 + m)) : 0;
+}
+
+/* the machine's time zone, if it says: TZ in the environment (MiNT,
+   MagiC), MiNT's /etc/timezone, or the minutes of an older EMAIL.INF */
+static void zone_detect(void)
+{
+	const char *tz = pf_getenv("TZ"), *found = 0;
+	char *file;
+	if (tz && *tz)
+		found = tz_find(tz) ? tz : zone_from_posix(tz);
+	if (!found && (file = pf_load("U:\\etc\\timezone", 0)) != 0) {
+		char *e = file + strcspn(file, "\r\n \t");
+		*e = 0;
+		if (tz_find(file))
+			str_copy(opt.tzname, file, sizeof(opt.tzname));
+		free(file);
+		if (opt.tzname[0])
+			return;
+	}
+	if (!found && tz_given)
+		found = zone_for_offset(opt.tz);
+	str_copy(opt.tzname, found ? (tz_find(found) ? tz_find(found)->name : found) : "UTC",
+		 sizeof(opt.tzname));
+}
+
 static void set_opt(const char *k, const char *v)
 {
 	short n = (short)atoi(v);
-	if (!strcmp(k, "tz")) opt.tz = n;
+	if (!strcmp(k, "tz")) { opt.tz = n; tz_given = 1; }	/* minutes: before time zones */
+	else if (!strcmp(k, "timezone")) str_copy(opt.tzname, v, sizeof(opt.tzname));
 	else if (!strcmp(k, "check")) opt.check = n;
 	else if (!strcmp(k, "page")) opt.page = n < 20 ? 20 : n > 1000 ? 1000 : n;
 	else if (!strcmp(k, "keepcache")) opt.keepcache = n;
@@ -367,7 +486,9 @@ int store_init(const char *workdir)
 		}
 	}
 	free(buf);
-	tls_tz_minutes = opt.tz;
+	if (!opt.tzname[0] || !tz_find(opt.tzname))
+		zone_detect();		/* written with the next save */
+	tls_tz_minutes = zone_offset_now();
 	for (i = 0; i < naccts; i++)
 		acct_fill_logins(accts[i]);
 	return naccts;
@@ -417,13 +538,13 @@ int store_save_settings(void)
 	SBUF b;
 	short i;
 	int r;
-	tls_tz_minutes = opt.tz;
+	tls_tz_minutes = zone_offset_now();
 	sb_init(&b);
 	sb_adds(&b, "; EMail settings, written by EMAIL.PRG. Lines starting with ; are notes.\r\n"
 		    "; Most of these are set in Options > Settings; see docs/GUIDE.md.\r\n"
 		    "; 1 means on, 0 means off.\r\n\r\n[OPTIONS]\r\n\r\n");
-	put_fmt(&b, "your time zone in minutes east of UTC (Israel: 120 in winter, 180 in summer)",
-		"TZ", "%d", opt.tz);
+	put_str(&b, "your time zone, by its name (Asia/Jerusalem); summer time follows by itself",
+		"TIMEZONE", opt.tzname);
 	put_fmt(&b, "check for new mail every this many minutes; 0 = only when you ask",
 		"CHECK", "%d", opt.check);
 	put_fmt(&b, "messages loaded at a time in a folder, \"Load more\" gets the next ones (20-1000)",
@@ -1007,7 +1128,7 @@ void date_str(unsigned long t, char *out, int size, int with_year)
 		str_copy(out, "", size);
 		return;
 	}
-	t += (long)opt.tz * 60;
+	t += (long)zone_offset_at(t) * 60;
 	secs = t % 86400;
 	z = t / 86400 + 719468;
 	era = z / 146097;

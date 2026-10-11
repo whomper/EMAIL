@@ -48,15 +48,16 @@ all: EMAIL.PRG ROOTS.DAT
 EMAIL.PRG: $(OBJDIR)/mail.elf tools/elf2tos.py
 	PRGFLAGS=7 python3 tools/elf2tos.py $< $@
 
-# Every build of EMAIL.PRG gets the next number: VERSION (1.5) and BUILD,
-# counted up here at each link, make "1.5.7" for the About box and the
-# User-Agent header. Commit BUILD with the program.
-$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/libbearssl.a atari/link.ld VERSION
-	n=$$(( $$(cat BUILD 2>/dev/null || echo 0) + 1 )); echo $$n > BUILD; \
-	printf 'const char mail_version[] = "%s.%s";\n' "$$(cat VERSION)" $$n > $(OBJDIR)/build.c
+# Every build of EMAIL.PRG gets the next version: the minor number in
+# VERSION (major.minor, e.g. 1.6) goes up by one each time the program is
+# linked, for the About box and the User-Agent header. Commit VERSION
+# with the program.
+$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/libbearssl.a atari/link.ld
+	v=$$(cat VERSION); v=$${v%%.*}.$$(( $${v#*.} + 1 )); echo $$v > VERSION; \
+	printf 'const char mail_version[] = "%s";\n' $$v > $(OBJDIR)/build.c
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)/build.o $(OBJDIR)/build.c
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(OBJDIR)/build.o $(OBJDIR)/libbearssl.a -lgcc
-	@echo "EMail $$(cat VERSION).$$(cat BUILD)"
+	@echo "EMail $$(cat VERSION)"
 
 $(OBJDIR)/bssl/%.o: $(BSSL)/src/%.c
 	@mkdir -p $(dir $@)

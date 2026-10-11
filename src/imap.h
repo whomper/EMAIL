@@ -53,6 +53,7 @@ typedef struct {
 IMAP *imap_login(const char *host, unsigned short port, int sec, const char *user,
 		 const char *pass, char *err, int errlen);
 void  imap_logout(IMAP *im);
+extern int imap_logout_nowait;	/* quitting: say LOGOUT, don't wait for the answer */
 int   imap_has(IMAP *im, const char *cap);
 
 /* LIST "" "*": cb(name as on the server, delimiter, role, noselect) */

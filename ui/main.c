@@ -948,6 +948,14 @@ static void work_dir(char *out, int size)
 		out[strlen(out) - 1] = 0;
 }
 
+/* quitting without keeping read messages: which folder's are going */
+static void quit_clearing(const char *account, const char *folder)
+{
+	char m[120];
+	snprintf(m, sizeof(m), "%s: removing the downloaded messages of %s...", account, folder);
+	status(m);
+}
+
 int main(void)
 {
 	short work_in_dummy, work_out[57], msg[8], d;
@@ -1070,12 +1078,22 @@ int main(void)
 		status("Telling the server what you read...");
 		mail_push_flags(cur_folder);
 	}
-	mail_disconnect_all();
+	/* what is left to do, each step on the status line */
+	busy(1);
+	imap_logout_nowait = 1;		/* the server needn't answer */
+	for (d = 0; d < naccts; d++)
+		if (accts[d]->im) {
+			char m[80];
+			snprintf(m, sizeof(m), "%s: logging out...", accts[d]->name);
+			status(m);
+			mail_disconnect(accts[d]);
+		}
 	conn_log_flush();
 	if (cur_folder)
 		fold_close(cur_folder);
 	if (!opt.keepcache)
-		cache_clear_all();
+		cache_clear_all(quit_clearing);
+	status("Saving the folders and settings...");
 	for (d = 0; d < naccts; d++)
 		folders_save(accts[d]);
 	store_save_settings();

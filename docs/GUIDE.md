@@ -271,7 +271,8 @@ mail fetches the Inbox and asks for the counts of every other folder too,
 all the questions sent at once so it is one short wait, so mail the server
 filed elsewhere shows up: "3 new messages, 1 in Junk" (new mail in Trash,
 Sent and Drafts doesn't count as new). The lists of those folders load
-when you open them. Deleting moves a message to Trash on the server;
+when you open them. After a move or a delete no other message is chosen, so nothing is
+opened or downloaded that you didn't ask for. Deleting moves a message to Trash on the server;
 deleting in Trash removes it for good.
 
 **POP3** accounts download new mail into local folders (Inbox, Sent,

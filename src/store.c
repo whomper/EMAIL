@@ -1058,7 +1058,7 @@ char *msg_load(FOLDER *f, unsigned long uid, long *len)
 	return pf_load(path, len);
 }
 
-void cache_clear_all(void)
+void cache_clear_all(void (*each)(const char *account, const char *folder))
 {
 	short i, j;
 	for (i = 0; i < naccts; i++) {
@@ -1069,6 +1069,8 @@ void cache_clear_all(void)
 			long k;
 			if (fi->local || fi->noselect)
 				continue;
+			if (each)
+				each(a->name, fi->disp);
 			f = fold_open(a, fi);
 			if (!f)
 				continue;

@@ -206,23 +206,14 @@ void list_select_uid(unsigned long uid)
 	win_redraw(&w_list, 0);
 }
 
-/* after the current message was deleted or moved: show the next one */
+/* after the current message was deleted or moved: nothing chosen, so
+   no message is opened (and perhaps downloaded) unasked */
 void list_after_remove(void)
 {
-	long keep = sel;
+	sel_uid = 0;
 	list_refresh();
-	if (nview) {
-		if (keep >= nview)
-			keep = nview - 1;
-		if (keep < 0)
-			keep = 0;
-		sel = keep;
-		sel_uid = cur_folder->h[view[sel]].uid;
-		win_redraw(&w_list, 0);
-		reader_show(&cur_folder->h[view[sel]]);
-	} else {
-		reader_clear();
-	}
+	win_redraw(&w_list, 0);
+	reader_clear();
 	folders_build();
 }
 

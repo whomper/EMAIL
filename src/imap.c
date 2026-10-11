@@ -401,6 +401,8 @@ IMAP *imap_login(const char *host, unsigned short port, int sec, const char *use
 	return im;
 }
 
+int imap_logout_nowait;
+
 void imap_logout(IMAP *im)
 {
 	if (!im)
@@ -410,7 +412,7 @@ void imap_logout(IMAP *im)
 		snprintf(tag, sizeof(tag), "T%04u", ++im->tag);
 		conn_cmd(im->c, 0, "%s LOGOUT", tag);
 		im->c->timeout_ms = 3000;
-		while (read_response(im) > 0 && strncmp(im->resp.s, tag, 5))
+		while (!imap_logout_nowait && read_response(im) > 0 && strncmp(im->resp.s, tag, 5))
 			;
 	}
 	if (im->c)

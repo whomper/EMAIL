@@ -175,7 +175,8 @@ void hdr_from_raw(HDR *h, const char *raw, long len);
 void msg_path(FOLDER *f, unsigned long uid, char *out, int size);
 int  msg_save(FOLDER *f, unsigned long uid, const char *data, long len);
 char *msg_load(FOLDER *f, unsigned long uid, long *len);
-void cache_clear_all(void);	/* bodies of IMAP folders (quit without keepcache) */
+/* bodies of IMAP folders (quit without keepcache); each(): the folder being cleared, or 0 */
+void cache_clear_all(void (*each)(const char *account, const char *folder));
 
 /* address book */
 int  abook_add(const char *addr);	/* "Name <a@b>", skips duplicates */

@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 		short i;
 		for (i = 0; i < naccts; i++)
 			folders_load(accts[i]);
-		cache_clear_all();
+		cache_clear_all(0);
 		printf("ok\n");
 	} else {
 		fprintf(stderr, "bad command\n");

@@ -5,7 +5,10 @@
  */
 #include <string.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/bidi.h"
+
+short text_pen = 1;		/* the colour of text that isn't inverted */
 
 void clip_on(GRECT *r)
 {
@@ -41,7 +44,7 @@ void hline(short x1, short x2, short y)
 	pxy[2] = x2;
 	pxy[3] = y;
 	vswr_mode(vdi_h, 1);
-	vsl_color(vdi_h, 1);
+	vsl_color(vdi_h, pen[P_LINE]);
 	v_pline(vdi_h, 2, pxy);
 }
 
@@ -111,7 +114,7 @@ void text_at(short x, short y, const char *s, long n, short cols, short flags)
 		heb_font_map(vis, n, opt.hebfont);
 	}
 	vswr_mode(vdi_h, 2);
-	vst_color(vdi_h, (flags & TX_INVERSE) ? 0 : 1);
+	vst_color(vdi_h, (flags & TX_INVERSE) ? 0 : text_pen);
 	vst_effects(vdi_h, (flags & TX_BOLD) ? 1 : (flags & TX_LIGHT) ? 2 : 0);
 	for (i = 0; i < n; i += 120) {
 		short k = n - i > 120 ? 120 : (short)(n - i);

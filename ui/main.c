@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/mail.h"
 #include "../src/compose.h"
 #include "../src/conn.h"
@@ -787,6 +788,8 @@ static void command(short cmd)
 			store_save_settings();
 			if (w_editor.h <= 0)
 				hebrew_kbd = opt.hebrew;
+			theme_init();
+			win_redraw_all();
 			list_refresh();
 			win_redraw(&w_reader, 0);
 		}
@@ -965,6 +968,7 @@ int main(void)
 	if (store_plain_passwords && !store_lost_passwords)
 		store_save_settings();		/* encrypt them right away */
 	falcon_dsp_init();
+	theme_init();
 	font_apply();
 	hebrew_kbd = opt.hebrew;
 	set_logging();
@@ -1071,6 +1075,7 @@ int main(void)
 	win_close(&w_editor);
 	main_close();
 	store_save_settings();
+	theme_exit();			/* the palette back as it was */
 	menu_bar(menu, 0);
 	v_clsvwk(vdi_h);
 	appl_exit();

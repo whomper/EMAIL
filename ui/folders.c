@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/plat.h"
 #include "../src/mail.h"
 #include "../src/compose.h"
@@ -89,7 +90,7 @@ static void draw(WIN *w, GRECT *clip)
 			r.y = y;
 			r.w = w->work.w;
 			r.h = ch;
-			fill(&r, 1);
+			fill(&r, pen[P_SEL]);
 		}
 		if (!e->fi) {
 			text_at(w->work.x + 2, y, e->a->name, strlen(e->a->name), cols, flags | TX_BOLD);
@@ -106,9 +107,13 @@ static void draw(WIN *w, GRECT *clip)
 			room -= (short)strlen(cnt) + 1;
 			text_at(w->work.x + 2 + ind * cw, y, e->fi->disp, strlen(e->fi->disp), room,
 				flags | (e->fi->noselect ? TX_LIGHT : 0));
-			if (cnt[0])
+			/* the unread count in the accent colour, like a badge */
+			if (cnt[0]) {
+				text_pen = flags ? 1 : pen[P_ACCENT];
 				text_at(w->work.x + (cols - 1 - (short)strlen(cnt)) * cw, y, cnt, strlen(cnt), 8,
 					flags | TX_BOLD);
+				text_pen = 1;
+			}
 		}
 	}
 }

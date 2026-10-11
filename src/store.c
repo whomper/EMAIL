@@ -34,6 +34,7 @@ static void defaults(void)
 	opt.hebrew = 0;
 	opt.offline = 0;
 	opt.dsp = 1;
+	opt.colour = 1;
 	opt.wrap = 72;
 	opt.font_id = 1;
 	opt.font_pt = 0;	/* the system font at the screen's size */
@@ -300,6 +301,7 @@ static void set_opt(const char *k, const char *v)
 	else if (!strcmp(k, "font")) shorts(v, &opt.font_id, 2);
 	else if (!strcmp(k, "falcon")) opt.falcon = n != 0;
 	else if (!strcmp(k, "dsp")) opt.dsp = n != 0;
+	else if (!strcmp(k, "colour") || !strcmp(k, "color")) opt.colour = n != 0;
 	else if (!strcmp(k, "hebfont")) opt.hebfont = n >= 0 && n <= 2 ? n : 0;
 }
 
@@ -448,6 +450,8 @@ int store_save_settings(void)
 		"FALCON", "%d", opt.falcon);
 	put_fmt(&b, "Falcon mode: 1 = the DSP checks the servers' signatures, 0 = the 68030 does",
 		"DSP", "%d", opt.dsp);
+	put_fmt(&b, "1 = colours (selection, unread counts, flags, quotes) on screens with 16 or more",
+		"COLOUR", "%d", opt.colour);
 	for (i = 0; i < naccts; i++) {
 		ACCOUNT *a = accts[i];
 		sb_adds(&b, "; one [ACCOUNT] part per account, up to 8; Options > Accounts edits them\r\n"

@@ -10,6 +10,7 @@
  */
 #include <string.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/util.h"
 #include "../src/bidi.h"
 
@@ -232,9 +233,9 @@ static void draw_scrollbar(WIN *w)
 	t.y = try_;
 	t.w = s.w - 2;
 	t.h = trh;
-	vsf_interior(vdi_h, 2);
+	vsf_interior(vdi_h, colour ? 1 : 2);
 	vsf_style(vdi_h, 1);
-	vsf_color(vdi_h, 1);
+	vsf_color(vdi_h, colour ? pen[P_PANEL] : 1);
 	{
 		short p[4];
 		p[0] = t.x;
@@ -271,19 +272,27 @@ static void draw_header(WIN *w)
 	h.y = w->box.y;
 	h.w = w->box.w;
 	h.h = header_h();
-	fill(&h, dark ? 1 : 0);
+	fill(&h, dark ? pen[P_HEAD] : pen[P_PANEL]);
 	if (il > cols - tl - 1)
 		il = cols - tl - 1;
 	text_at(h.x + cw / 2, h.y + 2, w->title, tl, cols, TX_BOLD | TX_LTR | (dark ? TX_INVERSE : 0));
-	if (il > 0)
-		text_at(h.x + w->box.w - (il + 1) * cw, h.y + 2, w->info, il, il,
-			TX_LTR | (dark ? TX_INVERSE : TX_LIGHT));
+	if (il > 0) {
+		if (dark || !colour)
+			text_at(h.x + w->box.w - (il + 1) * cw, h.y + 2, w->info, il, il,
+				TX_LTR | (dark ? TX_INVERSE : TX_LIGHT));
+		else
+			text_pen_at(pen[P_DIM], h.x + w->box.w - (il + 1) * cw, h.y + 2, w->info, il, il, TX_LTR);
+	}
 	hline(h.x, h.x + h.w - 1, h.y + h.h - 1);
 }
 
 static void draw_divider(GRECT *r)
 {
 	short p[4];
+	if (colour) {
+		fill(r, pen[P_PANEL]);
+		return;
+	}
 	fill(r, 0);
 	vsf_interior(vdi_h, 2);
 	vsf_style(vdi_h, 4);

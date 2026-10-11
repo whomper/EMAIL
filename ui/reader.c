@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/mail.h"
 #include "../src/util.h"
 #include "../src/plat.h"
@@ -298,7 +299,7 @@ static void draw(WIN *w, GRECT *clip)
 				short v = l->label;
 				if (v < l->n && l->s[v] == ' ')
 					v++;
-				text_at(x0, y, l->s, l->label, cols, TX_BOLD);
+				text_pen_at(pen[P_DIM], x0, y, l->s, l->label, cols, TX_BOLD);
 				text_at(x0 + (l->label + 1) * cw, y, l->s + v, l->n - v, cols - l->label - 1,
 					/* names and addresses read left to right; a
 					   Hebrew subject is a Hebrew sentence */
@@ -329,8 +330,16 @@ static void draw(WIN *w, GRECT *clip)
 			hline(w->work.x, w->work.x + w->work.w - 1, y + ch / 2);
 			break;
 		default:
-			text_at(x0, y, l->s, l->n, cols,
-				TX_RIGHT | ((l->n && l->s[0] == '>') ? TX_LIGHT : 0));
+			if (colour && l->n && l->s[0] == '>') {
+				/* quoted text by depth: blue, green, brown, as in Thunderbird */
+				short d = 0, k;
+				for (k = 0; k < l->n && (l->s[k] == '>' || l->s[k] == ' '); k++)
+					d += l->s[k] == '>';
+				text_pen_at(pen[d == 1 ? P_Q1 : d == 2 ? P_Q2 : P_Q3], x0, y, l->s, l->n, cols, TX_RIGHT);
+			} else {
+				text_at(x0, y, l->s, l->n, cols,
+					TX_RIGHT | ((l->n && l->s[0] == '>') ? TX_LIGHT : 0));
+			}
 		}
 	}
 }

@@ -90,6 +90,7 @@ typedef struct {
 	short hebfont;		/* where the font has its Hebrew letters: HEB_* */
 	short falcon;		/* Falcon mode: TLS on the Atari (and its DSP), no gateway */
 	short dsp;		/* Falcon mode may use the DSP (else the 68030 does it all) */
+	short colour;		/* colours, on screens with 16 or more */
 	char workdir[200];
 } OPTIONS;
 

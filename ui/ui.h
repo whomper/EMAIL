@@ -74,6 +74,10 @@ void main_status(const char *s);
 #define TX_LIGHT    8
 #define TX_LTR     16	/* left-to-right paragraph even when it starts in Hebrew */
 void fill(GRECT *r, short color);
+extern short text_pen;		/* the colour of text (theme.h pens); set, draw, set back to 1 */
+/* text in a colour: text_at with text_pen set for the one call */
+#define text_pen_at(p, x, y, s, n, cols, fl) \
+	do { text_pen = (p); text_at(x, y, s, n, cols, fl); text_pen = 1; } while (0)
 void clip_on(GRECT *r);
 /* draw up to cols characters of Atari text at x,y (logical order in) */
 void text_at(short x, short y, const char *s, long n, short cols, short flags);

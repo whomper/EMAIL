@@ -607,12 +607,12 @@ int dlg_account(ACCOUNT *a)
  * crossed when on, clicked on the box or its words) and framed fields. */
 
 static char s_tz[6], s_check[4], s_page[5], s_wrap[3];
-static short s_on[5];			/* keep, log, hebrew, falcon, dsp */
-enum { T_KEEP, T_LOG, T_HEB, T_FALCON, T_DSP };
+static short s_on[6];			/* keep, log, hebrew, falcon, dsp, colour */
+enum { T_KEEP, T_LOG, T_HEB, T_FALCON, T_DSP, T_COLOUR };
 
 #define NTICK 8
 static short tick_box[NTICK], tick_lbl[NTICK], tick_var[NTICK], nticks;
-static short page_of[DMAX], npages, cur_page, page_tab[4];
+static short page_of[DMAX], npages, cur_page, page_tab[6];
 static GRECT page_area;
 
 static TEDINFO *d_ted(const char *text, short just, short color)
@@ -789,6 +789,7 @@ static void settings_begin(short w, short h)
 	s_on[T_HEB] = opt.hebrew;
 	s_on[T_FALCON] = dlg_falcon;
 	s_on[T_DSP] = opt.dsp;
+	s_on[T_COLOUR] = opt.colour;
 }
 
 /* the settings of each part, at (x, y); fields in one column. Each
@@ -814,6 +815,15 @@ static void part_writing(short x, short y)
 	d_tick(x, ROW(1), "Start with the Hebrew keyboard", T_HEB);
 }
 
+static void part_look(short x, short y)
+{
+	rows_at(y);
+	d_tick(x, ROW(0), "Use colours", T_COLOUR);
+	d_add(G_STRING, 0, 0, (long)"on screens with 16 colours or more:", x + 3, ROW(1), 35, 1);
+	d_add(G_STRING, 0, 0, (long)"selection, unread counts, flags,", x + 3, ROW(2), 32, 1);
+	d_add(G_STRING, 0, 0, (long)"quoted text", x + 3, ROW(3), 11, 1);
+}
+
 static void part_connection(short x, short y)
 {
 	rows_at(y);
@@ -830,21 +840,21 @@ static void part_connection(short x, short y)
 
 static short settings_sidebar(short *ok)
 {
-	static const char *names[] = { "  Mail", "  Writing", "  Connection" };
+	static const char *names[] = { "  Mail", "  Writing", "  Look", "  Connection" };
 	short k, box, from, gap = (short)(gl_hchar / 2);
 	settings_begin(SX + 42, 16);
 	d_band(SX + 42, " Settings");
 	/* the list: plain words on white, the chosen one in a black bar, a
 	   line between it and the settings */
 	d_add(G_BOX, 0, 0, 0x00001171L, SW, 1, (short)(0 | (1 << 8)), 15);
-	for (k = 0; k < 3; k++) {
+	for (k = 0; k < 4; k++) {
 		npages++;
 		page_tab[npages] = d_add(G_BOXTEXT, TOUCHEXIT, 0, (long)d_ted(names[k], 0, 0x1180),
 					 (short)(0 | (2 << 8)), (short)((2 + k * 2) | ((k * gap) << 8)),
 					 (short)((SW - 1) | (6 << 8)), 1);
 	}
 	box = d_add(G_IBOX, 0, 0, 0, SX - 1, 2, 42, 12);
-	for (k = 1; k <= 3; k++) {
+	for (k = 1; k <= 4; k++) {
 		from = nobj;
 		adding_page = k;
 		d_add(G_STRING, 0, 0, (long)(names[k - 1] + 2), SX, 2, (short)strlen(names[k - 1] + 2), 1);
@@ -853,6 +863,8 @@ static short settings_sidebar(short *ok)
 			part_mail(SX, 4);
 		else if (k == 2)
 			part_writing(SX, 4);
+		else if (k == 3)
+			part_look(SX, 4);
 		else
 			part_connection(SX, 4);
 		page_mark(from);
@@ -887,6 +899,7 @@ int dlg_settings(void)
 	opt.hebrew = s_on[T_HEB];
 	dlg_falcon = s_on[T_FALCON];
 	opt.dsp = s_on[T_DSP];
+	opt.colour = s_on[T_COLOUR];
 	return 1;
 }
 

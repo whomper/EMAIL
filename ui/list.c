@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ui.h"
+#include "theme.h"
 #include "../src/mail.h"
 #include "../src/util.h"
 
@@ -269,9 +270,11 @@ static void draw(WIN *w, GRECT *clip)
 	/* column titles */
 	{
 		const char *who = show_to() ? "To" : "From";
+		text_pen = pen[P_DIM];
 		text_at(x0 + MK * cw, w->work.y + 1, who, strlen(who), c_from, TX_BOLD);
 		text_at(x0 + (MK + 1 + c_from) * cw, w->work.y + 1, "Subject", 7, c_subj, TX_BOLD);
 		text_at(x0 + (MK + 1 + c_from + c_subj) * cw, w->work.y + 1, "Date", 4, c_date, TX_BOLD);
+		text_pen = 1;
 		hline(w->work.x, w->work.x + w->work.w - 1, w->work.y + w->head_h - 2);
 	}
 	if (!cur_folder) {
@@ -294,7 +297,7 @@ static void draw(WIN *w, GRECT *clip)
 		r.y = y;
 		r.w = w->work.w;
 		r.h = ch;
-		fill(&r, sel == nview ? 1 : 0);
+		fill(&r, sel == nview ? pen[P_SEL] : 0);
 		text_at(x0 + MK * cw, y, t, strlen(t), cols - MK, TX_BOLD | (sel == nview ? TX_INVERSE : 0));
 	}
 	for (i = w->top; i < nview && i < w->top + rows; i++) {
@@ -310,7 +313,7 @@ static void draw(WIN *w, GRECT *clip)
 			r.y = y;
 			r.w = w->work.w;
 			r.h = ch;
-			fill(&r, 1);
+			fill(&r, pen[P_SEL]);
 		}
 		if (!(h->flags & MF_SEEN))
 			fl |= TX_BOLD;
@@ -318,7 +321,12 @@ static void draw(WIN *w, GRECT *clip)
 		marks[0] = (h->flags & MF_FLAGGED) ? '!' : ' ';
 		marks[1] = (h->flags & MF_ATTACH) ? '@' : ' ';
 		marks[2] = 0;
-		text_at(x0, y, marks, 2, 2, fl & ~TX_BOLD);
+		if (colour && !lit) {
+			text_pen_at(pen[P_FLAG], x0, y, marks, 1, 1, TX_BOLD);
+			text_pen_at(pen[P_DIM], x0 + cw, y, marks + 1, 1, 1, 0);
+		} else {
+			text_at(x0, y, marks, 2, 2, fl & ~TX_BOLD);
+		}
 		/* "Name <a@b>" shows as Name */
 		addr_split(who ? who : "", name, sizeof(name), 0, 0);
 		if (!name[0])
@@ -326,11 +334,14 @@ static void draw(WIN *w, GRECT *clip)
 		text_at(x0 + MK * cw, y, name, strlen(name), c_from, fl | TX_RIGHT);
 		text_at(x0 + (MK + 1 + c_from) * cw, y, h->subject, strlen(h->subject), c_subj - 1, fl | TX_RIGHT);
 		date_str(h->date, date, sizeof(date), wide);
+		/* dates and sizes in grey, so who and what stand out */
+		text_pen = lit ? 1 : pen[P_DIM];
 		text_at(x0 + (MK + 1 + c_from + c_subj) * cw, y, date, strlen(date), c_date, fl & ~TX_BOLD);
 		if (wide) {
 			size_str(h->size, size);
 			text_at(x0 + (cols - 6) * cw, y, size, strlen(size), 5, fl & ~TX_BOLD);
 		}
+		text_pen = 1;
 	}
 }
 

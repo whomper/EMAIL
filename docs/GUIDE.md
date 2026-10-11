@@ -284,6 +284,14 @@ note instead of a new attempt. Marking messages read, unread or flagged
 works as usual and reaches the server at the next connection. Check mail
 (^K, or a click on the account's name) or the timed check connects again.
 
+**Colours**: on a screen with 16 colours or more EMail uses a few, for
+meaning only, as modern mail programs do: the selection in blue, the
+focused pane's title bar dark, unread counts in blue, the flag mark in
+red, dates and header labels in grey, and quoted text in blue, green and
+brown by depth. With 256 colours it sets its own soft shades (and puts
+the palette back when it quits). Settings > Look switches them off;
+monochrome screens look as they always did.
+
 **Settings** (Options > Settings): your time zone in minutes east of UTC
 (Israel: 120 in winter, 180 in summer), automatic checking every N
 minutes, how many messages to load at a time, whether read messages stay on disk

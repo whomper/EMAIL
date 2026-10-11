@@ -48,8 +48,15 @@ all: EMAIL.PRG ROOTS.DAT
 EMAIL.PRG: $(OBJDIR)/mail.elf tools/elf2tos.py
 	PRGFLAGS=7 python3 tools/elf2tos.py $< $@
 
-$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/libbearssl.a atari/link.ld
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(OBJDIR)/libbearssl.a -lgcc
+# Every build of EMAIL.PRG gets the next number: VERSION (1.5) and BUILD,
+# counted up here at each link, make "1.5.7" for the About box and the
+# User-Agent header. Commit BUILD with the program.
+$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/libbearssl.a atari/link.ld VERSION
+	n=$$(( $$(cat BUILD 2>/dev/null || echo 0) + 1 )); echo $$n > BUILD; \
+	printf 'const char mail_version[] = "%s.%s";\n' "$$(cat VERSION)" $$n > $(OBJDIR)/build.c
+	$(CC) $(CFLAGS) -c -o $(OBJDIR)/build.o $(OBJDIR)/build.c
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(OBJDIR)/build.o $(OBJDIR)/libbearssl.a -lgcc
+	@echo "EMail $$(cat VERSION).$$(cat BUILD)"
 
 $(OBJDIR)/bssl/%.o: $(BSSL)/src/%.c
 	@mkdir -p $(dir $@)
@@ -79,7 +86,7 @@ $(OBJDIR):
 HOSTCC     ?= cc
 HOSTCFLAGS := -O1 -g -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare \
               -Wno-format-truncation -Isrc -fsanitize=address,undefined
-HOSTSRC    := $(addprefix src/,$(addsuffix .c,$(CORE))) tests/host/plat_posix.c
+HOSTSRC    := $(addprefix src/,$(addsuffix .c,$(CORE))) tests/host/plat_posix.c tests/host/version.c
 HOSTLIB    := $(OBJDIR)/libbearssl-host.a
 
 $(OBJDIR)/hbssl/%.o: $(BSSL)/src/%.c

@@ -72,6 +72,11 @@ sudo apt install gcc-m68k-linux-gnu      # Debian/Ubuntu
 make                                     # writes EMAIL.PRG and ROOTS.DAT
 ```
 
+Every build of EMAIL.PRG gets the next version number: `VERSION` (1.5)
+and the build count in `BUILD`, which the Makefile counts up each time it
+links the program ("1.5.7", in the About box and the User-Agent header).
+Commit `BUILD` together with the program.
+
 No MiNTLib is needed: the program is freestanding (`atari/`) and
 `tools/elf2tos.py` writes the TOS executable. It is built for the 68000,
 so it runs on every Atari from the ST to the Falcon; only BearSSL, used in

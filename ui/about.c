@@ -207,11 +207,15 @@ void dlg_about(void)
 	center(y, "EMail", TX_BOLD);
 	{
 		/* underlined, like Claude ST's name */
-		short n = 4, x = dx + (dw - n * cw) / 2;
+		short n = 5, x = dx + (dw - n * cw) / 2;	/* "EMail" */
 		line(x, y + ch - 1, x + n * cw - 1, y + ch - 1);
 	}
 	y += lh;
-	center(y, "Version " MAIL_VERSION, 0);
+	{
+		char v[40];
+		snprintf(v, sizeof(v), "Version %s", mail_version);
+		center(y, v, 0);
+	}
 	y += lh + lh / 2;
 	center(y, "E-mail for the Atari ST, TT and Falcon", 0);
 	y += lh + lh / 2;

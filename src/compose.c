@@ -11,7 +11,7 @@
 #include "util.h"
 
 #include "version.h"
-#define VERSION_UA "EMail/" MAIL_VERSION " (Atari ST/TT/Falcon)"
+
 
 int addr_list(const char *s, char out[][160], int max)
 {
@@ -216,7 +216,7 @@ char *compose_build(ACCOUNT *a, const char *text, long len, const char *in_reply
 		sb_adds(&b, references);
 		sb_adds(&b, "\r\n");
 	}
-	sb_adds(&b, "User-Agent: " VERSION_UA "\r\nMIME-Version: 1.0\r\n");
+	sb_printf(&b, "User-Agent: EMail/%s (Atari ST/TT/Falcon)\r\nMIME-Version: 1.0\r\n", mail_version);
 
 	/* body: Atari -> UTF-8, quoted-printable when not plain ASCII */
 	{

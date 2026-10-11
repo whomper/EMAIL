@@ -217,7 +217,7 @@ void list_after_remove(void)
 	folders_build();
 }
 
-static short wide;	/* room for the year and the size column */
+static short wide;	/* room for the size column */
 
 /* the marks column: ! (flagged) and @ (attachments), then a space.
    Unread messages are bold. */
@@ -226,8 +226,8 @@ static short wide;	/* room for the year and the size column */
 static void columns(short cols, short *c_from, short *c_subj, short *c_date)
 {
 	short rest;
-	wide = cols >= 76;
-	*c_date = wide ? 15 : 12;
+	wide = cols >= 76;	/* the size column */
+	*c_date = 15;		/* "11.10.26 14:05": always with the year */
 	rest = cols - MK - *c_date - (wide ? 6 : 0);
 	*c_from = rest / 3;
 	if (*c_from > 24)
@@ -324,7 +324,7 @@ static void draw(WIN *w, GRECT *clip)
 			addr_split(who ? who : "", 0, 0, name, sizeof(name));
 		text_at(x0 + MK * cw, y, name, strlen(name), c_from, fl | TX_RIGHT);
 		text_at(x0 + (MK + 1 + c_from) * cw, y, h->subject, strlen(h->subject), c_subj - 1, fl | TX_RIGHT);
-		date_str(h->date, date, sizeof(date), wide);
+		date_str(h->date, date, sizeof(date), 1);
 		/* dates and sizes in grey, so who and what stand out */
 		text_pen = lit ? 1 : pen[P_DIM];
 		text_at(x0 + (MK + 1 + c_from + c_subj) * cw, y, date, strlen(date), c_date, fl & ~TX_BOLD);

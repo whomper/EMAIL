@@ -50,6 +50,10 @@ namespace inbox {
     special_use = \Drafts
     auto = subscribe
   }
+  mailbox Junk {
+    special_use = \Junk
+    auto = subscribe
+  }
 }
 protocol imap {
   imap_capability = +MOVE

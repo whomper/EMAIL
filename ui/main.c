@@ -302,6 +302,7 @@ void cmd_check_all(void)
 		return;
 	}
 	busy(1);
+	mail_new_junk = 0;
 	for (i = 0; i < naccts; i++) {
 		long n = 0;
 		mail_err[0] = 0;
@@ -323,8 +324,10 @@ void cmd_check_all(void)
 	if (errs[0]) {
 		status(errs);
 	} else {
-		char m[60];
+		char m[80];
 		snprintf(m, sizeof(m), total == 1 ? "1 new message" : "%s new messages", num(total));
+		if (mail_new_junk)
+			snprintf(m + strlen(m), sizeof(m) - strlen(m), ", %s in Junk", num(mail_new_junk));
 		status(m);
 	}
 	menu_update();

@@ -153,6 +153,28 @@ expect "local Outbox exists" "^Outbox .*role=7 local=1" "$out"
 
 out=$(run check 1)
 expect "check finds 3 new messages" "new: 3" "$out"
+
+# Junk and Trash: their counts on every check, new mail in Junk is new
+python3 - $IMAP <<'PY'
+import imaplib, sys
+m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
+m.login("dana", "secret")
+m.append("Junk", "()", None, b"From: spam@example.com\r\nSubject: Win\r\n\r\nwin\r\n")
+m.append("Trash", "(\\Seen)", None, b"From: old@example.com\r\nSubject: Old\r\n\r\nold\r\n")
+m.logout()
+PY
+out=$(MAIL_LOG=1 run check 1)
+expect "check: a new message in Junk counts" "new: 1" "$out"
+out=$(run folders 1)
+expect "check: Junk counts updated" "^Junk .*role=5 .*total=1 unread=1" "$out"
+expect "check: Trash counts updated" "^Trash .*role=3 .*total=1 unread=0" "$out"
+python3 - $IMAP <<'PY'
+import imaplib, sys
+m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
+m.login("dana", "secret")
+m.select("Trash"); m.store("1:*", "+FLAGS", "(\\Deleted)"); m.expunge()
+m.logout()
+PY
 out=$(run list 1 INBOX)
 expect "Hebrew subject in the index" "שלום" "$out"
 expect "windows-1255 subject decoded" "מכתב" "$out"

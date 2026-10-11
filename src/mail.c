@@ -697,6 +697,38 @@ static int pop_check(ACCOUNT *a, long *newmsgs)
 	return r > 0 && !c.fail;
 }
 
+long mail_new_junk;
+
+/* Junk and Trash on each check: their counts only, one STATUS each (a
+   round trip of some 120 bytes); the list itself loads when opened.
+   New unread mail in Junk counts as new. */
+static int check_counts(ACCOUNT *a, long *newmsgs)
+{
+	static const short roles[] = { FR_JUNK, FR_TRASH };
+	short k;
+	for (k = 0; k < 2; k++) {
+		FINFO *fi = folder_role(a, roles[k]);
+		long messages = -1, unseen = -1;
+		if (!fi || fi->local || fi->noselect)
+			continue;
+		if (imap_status(a->im, fi->server, &messages, &unseen) < 0)
+			return imap_failed(a, -1);
+		if (roles[k] == FR_JUNK && unseen > fi->unread && fi->unread >= 0) {
+			mail_new_junk += unseen - fi->unread;
+			if (newmsgs)
+				*newmsgs += unseen - fi->unread;
+		}
+		if (messages >= 0 && messages != fi->total)
+			fi->synced = 0;		/* changed: opening it fetches again */
+		if (messages >= 0)
+			fi->total = messages;
+		if (unseen >= 0)
+			fi->unread = unseen;
+	}
+	folders_save(a);
+	return 1;
+}
+
 int mail_check(ACCOUNT *a, long *newmsgs)
 {
 	int ok, sent;
@@ -713,6 +745,8 @@ int mail_check(ACCOUNT *a, long *newmsgs)
 		}
 		in = folder_role(a, FR_INBOX);
 		ok = in ? mail_sync_folder(a, in, newmsgs) : 0;
+		if (ok)
+			ok = check_counts(a, newmsgs);
 	}
 	if (ok) {
 		FINFO *ob = folder_role(a, FR_OUTBOX);

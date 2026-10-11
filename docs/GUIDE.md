@@ -266,7 +266,10 @@ EMail starts (at the first check), so folders made, renamed or deleted
 elsewhere show up then; Folder > Refresh folder list reads it any time. Opening, flagging or marking a message changes it at once
 on the Atari; EMail tells the server in one go when you pause for a few
 seconds, and at the latest when you quit. A folder you opened in the last two
-minutes opens straight from disk; Check mail always asks the server. Deleting moves a message to Trash on the server;
+minutes opens straight from disk; Check mail always asks the server. Check
+mail fetches the Inbox and asks for the counts of Junk and Trash too (one
+short question each), so mail the server filed as junk shows up: "3 new
+messages, 1 in Junk". Deleting moves a message to Trash on the server;
 deleting in Trash removes it for good.
 
 **POP3** accounts download new mail into local folders (Inbox, Sent,

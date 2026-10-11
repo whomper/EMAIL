@@ -169,6 +169,13 @@ short popup(short x, short y, const char *const *labels, short n);
 
 /* font.c */
 void font_apply(void);		/* opt.font_id/pt -> cw, ch */
+void font_reselect(void);	/* the text font again, after drawing in another */
+/* how the text font gets its Hebrew letters */
+#define HM_MAP     0		/* where opt.hebfont says (system and bitmap fonts) */
+#define HM_UNICODE 1		/* a vector font's own, found by Unicode (NVDI) */
+#define HM_SYSTEM  2		/* a vector font without them: the system font's */
+extern short heb_mode;
+extern unsigned short heb_idx[27];
 void font_menu(void);
 
 /* main.c */

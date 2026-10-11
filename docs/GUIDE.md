@@ -171,9 +171,12 @@ font families on the left, the sizes of the chosen one beside them,
 what kind of font it is (bitmap, Speedo, TrueType, Type 1) and a sample
 below. The system font comes in two sizes (8×8 and 8×16); with a GDOS
 such as NVDI or SpeedoGDOS its fonts are listed too. EMail lays text out
-in character cells, so it needs a monospaced font: proportional ones
-are shown light and can't be chosen. Menus and dialogs keep the system
-font.
+in character cells, so it needs a monospaced font: only those are
+listed. The first time, EMail measures each font to find them ("Looking
+for fixed-width fonts" on the status line; it can take a while with many
+vector fonts) and keeps the answers in EMAIL.FNT, so the selector opens
+quickly afterwards and only new fonts are measured. Delete EMAIL.FNT to
+measure them all again. Menus and dialogs keep the system font.
 
 **Hebrew letters.** Fonts keep the Hebrew letters in different places:
 the standard Atari font (TOS, EmuTOS) at the Atari character set's,
@@ -181,7 +184,13 @@ Israeli system fonts and many GDOS fonts where ISO-8859-8 or DOS 862 put
 them. If Hebrew shows as other symbols, open Options > Font: the three
 buttons under "Hebrew letters" each show the word shalom as that kind of
 font would; pick the one that reads correctly, and the sample below
-shows the result.
+shows the result. Those buttons are for the system and bitmap fonts.
+A vector font (Speedo, TrueType, Type 1) is asked through NVDI 5 for
+its Hebrew letters by Unicode, as FreeMono and Liberation Mono have
+them; the line "Type:" says "Hebrew from the font". A vector font
+without Hebrew (Bitstream's Speedo fonts, or an older NVDI) says
+"Hebrew in the system font": the letters are then drawn in the system
+font, in the same cells.
 
 **About EMail** (first menu) shows the version and how EMail is connected.
 

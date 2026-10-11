@@ -591,6 +591,59 @@ int imap_status(IMAP *im, const char *mbox, long *messages, long *unseen)
 	return run(im, 0, status_cb, &st, "STATUS %s (MESSAGES UNSEEN)", q);
 }
 
+#define BATCH 32		/* questions in flight at a time */
+
+int imap_status_many(IMAP *im, const char *const *mboxes, int n, long *messages, long *unseen)
+{
+	int from, i;
+	for (i = 0; i < n; i++)
+		messages[i] = unseen[i] = -1;
+	for (from = 0; from < n; from += BATCH) {
+		int to = from + BATCH < n ? from + BATCH : n, done = from;
+		unsigned short first = (unsigned short)(im->tag + 1);
+		SBUF out;
+		sb_init(&out);
+		for (i = from; i < to; i++) {
+			char q[300], line[340];
+			int len;
+			imap_quote(q, sizeof(q), mboxes[i]);
+			len = snprintf(line, sizeof(line), "T%04u STATUS %s (MESSAGES UNSEEN)", ++im->tag, q);
+			conn_log(im->c->name, " >> ", line, len);
+			sb_add(&out, line, len);
+			sb_adds(&out, "\r\n");
+		}
+		if (!out.s || !conn_write(im->c, out.s, out.len)) {
+			str_copy(im->err, im->c->err, sizeof(im->err));
+			sb_free(&out);
+			return -1;
+		}
+		sb_free(&out);
+		/* each answer comes before its command's completion, in order */
+		while (done < to) {
+			const char *s;
+			if (read_response(im) < 0)
+				return -1;
+			s = im->resp.s;
+			if (s[0] == 'T') {
+				unsigned short d = (unsigned short)(strtoul(s + 1, 0, 10) - first);
+				if (d < to - from)
+					done = from + d + 1;
+				continue;
+			}
+			if (s[0] == '*' && s[1] == ' ') {
+				untagged(im, s);
+				if (str_istarts(s + 2, "STATUS ")) {
+					STATUSCB st;
+					st.messages = &messages[done];
+					st.unseen = &unseen[done];
+					status_cb(im, &st, s, im->resp.len);
+				}
+			}
+		}
+	}
+	return 1;
+}
+
 int imap_store(IMAP *im, const char *uidset, int add, unsigned short flags)
 {
 	char fs[120];

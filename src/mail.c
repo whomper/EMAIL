@@ -697,34 +697,53 @@ static int pop_check(ACCOUNT *a, long *newmsgs)
 	return r > 0 && !c.fail;
 }
 
-long mail_new_junk;
+long mail_new_other;
+char mail_new_where[64];
+short mail_new_folders;
 
-/* Junk and Trash on each check: their counts only, one STATUS each (a
-   round trip of some 120 bytes); the list itself loads when opened.
-   New unread mail in Junk counts as new. */
+/* every other folder on each check: its counts only (STATUS, all asked
+   at once so it is one wait); the list itself loads when opened. New
+   unread mail outside Trash, Sent and Drafts counts as new. */
 static int check_counts(ACCOUNT *a, long *newmsgs)
 {
-	static const short roles[] = { FR_JUNK, FR_TRASH };
-	short k;
-	for (k = 0; k < 2; k++) {
-		FINFO *fi = folder_role(a, roles[k]);
-		long messages = -1, unseen = -1;
-		if (!fi || fi->local || fi->noselect)
+	const char *names[MAXFOLDER];
+	short which[MAXFOLDER], k;
+	int n = 0;
+	long messages[MAXFOLDER], unseen[MAXFOLDER];
+	unsigned long t0 = pf_ms();
+	long b0 = conn_bytes;
+	for (k = 0; k < a->nfolders; k++) {
+		FINFO *fi = &a->folders[k];
+		if (fi->local || fi->noselect || fi->role == FR_INBOX)
 			continue;
-		if (imap_status(a->im, fi->server, &messages, &unseen) < 0)
-			return imap_failed(a, -1);
-		if (roles[k] == FR_JUNK && unseen > fi->unread && fi->unread >= 0) {
-			mail_new_junk += unseen - fi->unread;
-			if (newmsgs)
-				*newmsgs += unseen - fi->unread;
-		}
-		if (messages >= 0 && messages != fi->total)
-			fi->synced = 0;		/* changed: opening it fetches again */
-		if (messages >= 0)
-			fi->total = messages;
-		if (unseen >= 0)
-			fi->unread = unseen;
+		which[n] = k;
+		names[n++] = fi->server;
 	}
+	if (!n)
+		return 1;
+	status("%s: counting mail in %d folders...", a->name, n);
+	if (imap_status_many(a->im, names, n, messages, unseen) < 0)
+		return imap_failed(a, -1);
+	for (k = 0; k < n; k++) {
+		FINFO *fi = &a->folders[which[k]];
+		short r = fi->role;
+		if (r != FR_TRASH && r != FR_SENT && r != FR_DRAFTS && fi->unread >= 0 &&
+		    unseen[k] > fi->unread) {
+			long more = unseen[k] - fi->unread;
+			mail_new_other += more;
+			if (newmsgs)
+				*newmsgs += more;
+			if (!mail_new_folders++)
+				str_copy(mail_new_where, fi->disp, sizeof(mail_new_where));
+		}
+		if (messages[k] >= 0 && messages[k] != fi->total)
+			fi->synced = 0;		/* changed: opening it fetches again */
+		if (messages[k] >= 0)
+			fi->total = messages[k];
+		if (unseen[k] >= 0)
+			fi->unread = unseen[k];
+	}
+	timing(t0, b0, "counts of %d folders", n);
 	folders_save(a);
 	return 1;
 }

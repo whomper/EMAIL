@@ -24,7 +24,11 @@ int  mail_sync_folder(ACCOUNT *a, FINFO *fi, long *newmsgs);
 int  mail_load_more(ACCOUNT *a, FINFO *fi, long *added);
 /* inbox (IMAP sync or POP3 download), then send the Outbox */
 int  mail_check(ACCOUNT *a, long *newmsgs);
-extern long mail_new_junk;	/* of those new messages, in Junk */
+/* of those new messages, how many outside the Inbox, and where: the
+   first such folder's name, and in how many folders */
+extern long mail_new_other;
+extern char mail_new_where[64];
+extern short mail_new_folders;
 
 /* the raw message: from the cache, else downloaded; marks it read */
 char *mail_fetch(FOLDER *f, HDR *h, long *len);

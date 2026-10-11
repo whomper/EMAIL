@@ -66,6 +66,10 @@ int imap_fetch_seq(IMAP *im, const char *seqset, const char *items,
 		   void (*cb)(void *ud, IMAPFETCH *f), void *ud);
 /* message and unseen counts of a mailbox without selecting it */
 int imap_status(IMAP *im, const char *mbox, long *messages, long *unseen);
+/* the same for n folders at once: the questions go out together and the
+   answers come back in one wait. A folder the server refuses stays -1;
+   -1 when the connection fails */
+int imap_status_many(IMAP *im, const char *const *mboxes, int n, long *messages, long *unseen);
 int imap_store(IMAP *im, const char *uidset, int add, unsigned short flags);
 int imap_store_seq(IMAP *im, const char *seqset, int add, unsigned short flags);
 int imap_copy(IMAP *im, const char *uidset, const char *dest);

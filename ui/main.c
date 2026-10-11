@@ -302,7 +302,8 @@ void cmd_check_all(void)
 		return;
 	}
 	busy(1);
-	mail_new_junk = 0;
+	mail_new_other = 0;
+	mail_new_folders = 0;
 	for (i = 0; i < naccts; i++) {
 		long n = 0;
 		mail_err[0] = 0;
@@ -324,10 +325,13 @@ void cmd_check_all(void)
 	if (errs[0]) {
 		status(errs);
 	} else {
-		char m[80];
+		char m[120];
 		snprintf(m, sizeof(m), total == 1 ? "1 new message" : "%s new messages", num(total));
-		if (mail_new_junk)
-			snprintf(m + strlen(m), sizeof(m) - strlen(m), ", %s in Junk", num(mail_new_junk));
+		if (mail_new_folders == 1)
+			snprintf(m + strlen(m), sizeof(m) - strlen(m), ", %s in %s", num(mail_new_other), mail_new_where);
+		else if (mail_new_folders > 1)
+			snprintf(m + strlen(m), sizeof(m) - strlen(m), ", %s in %d other folders",
+				 num(mail_new_other), mail_new_folders);
 		status(m);
 	}
 	menu_update();

@@ -151,23 +151,33 @@ expect "IMAP folder list has Sent with its role" "^Sent .*role=2" "$out"
 expect "IMAP folder list has Trash with its role" "^Trash .*role=3" "$out"
 expect "local Outbox exists" "^Outbox .*role=7 local=1" "$out"
 
+python3 - $IMAP <<'PY'
+import imaplib, sys
+m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
+m.login("dana", "secret")
+for i in range(1, 31):          # more than one batch of questions
+    m.create("F%02d" % i)
+m.logout()
+PY
 out=$(run check 1)
 expect "check finds 3 new messages" "new: 3" "$out"
 
-# Junk and Trash: their counts on every check, new mail in Junk is new
+# every folder's counts on each check; new mail outside Trash is new
 python3 - $IMAP <<'PY'
 import imaplib, sys
 m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
 m.login("dana", "secret")
 m.append("Junk", "()", None, b"From: spam@example.com\r\nSubject: Win\r\n\r\nwin\r\n")
 m.append("Trash", "(\\Seen)", None, b"From: old@example.com\r\nSubject: Old\r\n\r\nold\r\n")
+m.append("F30", "()", None, b"From: list@example.com\r\nSubject: List\r\n\r\nlist\r\n")
 m.logout()
 PY
 out=$(MAIL_LOG=1 run check 1)
-expect "check: a new message in Junk counts" "new: 1" "$out"
+expect "check: new messages in Junk and F30 count" "new: 2" "$out"
 out=$(run folders 1)
 expect "check: Junk counts updated" "^Junk .*role=5 .*total=1 unread=1" "$out"
 expect "check: Trash counts updated" "^Trash .*role=3 .*total=1 unread=0" "$out"
+expect "check: F30's counts (34 folders: two batches of questions)" "^F30 .*total=1 unread=1" "$out"
 python3 - $IMAP <<'PY'
 import imaplib, sys
 m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))

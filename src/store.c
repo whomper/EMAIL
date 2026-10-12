@@ -648,7 +648,6 @@ void folder_set_server(FINFO *f, const char *server, char delim)
 FINFO *folder_add(ACCOUNT *a, const char *server, char delim, short role, short noselect, short local)
 {
 	FINFO *f = folder_find(a, server);
-	char path[220];
 	if (!f) {
 		if (a->nfolders >= MAXFOLDER)
 			return 0;
@@ -661,10 +660,10 @@ FINFO *folder_add(ACCOUNT *a, const char *server, char delim, short role, short 
 	f->noselect = noselect;
 	f->local = local;
 	folder_names(f, delim);
-	if (!noselect) {
-		path_join(path, sizeof(path), a->dir, f->dir);
-		pf_mkdir(path);
-	}
+	/* its directory is made when the folder is first opened: GEMDOS
+	   keeps a little of its scarce internal memory for every directory
+	   it has been in, and with many folders, touching them all at each
+	   start fills it (TOS then halts, FOLDRxxx territory) */
 	return f;
 }
 
@@ -929,7 +928,9 @@ FOLDER *fold_open(ACCOUNT *a, FINFO *fi)
 	f->acct = a;
 	f->fi = fi;
 	folder_path(a, fi, f->dir, sizeof(f->dir));
-	pf_mkdir(f->dir);
+	if (!fi->opened)
+		pf_mkdir(f->dir);
+	fi->opened = 1;
 	f->uidnext = 1;
 	path_join(path, sizeof(path), f->dir, "INDEX.DAT");
 	buf = pf_load(path, 0);
@@ -1058,7 +1059,7 @@ char *msg_load(FOLDER *f, unsigned long uid, long *len)
 	return pf_load(path, len);
 }
 
-void cache_clear_all(void (*each)(const char *account, const char *folder))
+void cache_clear_all(void (*each)(const char *account, const char *folder), int all)
 {
 	short i, j;
 	for (i = 0; i < naccts; i++) {
@@ -1067,7 +1068,7 @@ void cache_clear_all(void (*each)(const char *account, const char *folder))
 			FINFO *fi = &a->folders[j];
 			FOLDER *f;
 			long k;
-			if (fi->local || fi->noselect)
+			if (fi->local || fi->noselect || (!all && !fi->opened))
 				continue;
 			if (each)
 				each(a->name, fi->disp);

@@ -238,15 +238,21 @@ static HDR base;
 static HDR *freep;
 
 long heap_tt, heap_st;		/* bytes the heap took from TT/Fast and ST RAM */
+static short heap_blocks;	/* GEMDOS blocks taken, each a memory descriptor */
+#define MAX_BLOCKS 40		/* TOS's pool is shared with every program and folder */
 
 /* one block from GEMDOS, TT/Fast RAM preferred; 0 when there is none */
 static HDR *core_block(size_t bytes)
 {
-	HDR *h = Mxalloc(bytes, 3);
+	HDR *h;
+	if (heap_blocks >= MAX_BLOCKS)
+		return 0;		/* "out of memory" beats a halted machine */
+	h = Mxalloc(bytes, 3);
 	if ((long)h == -32 || (long)h <= 0)
 		h = Malloc(bytes);
 	if ((long)h <= 0)
 		return 0;
+	heap_blocks++;
 	if ((unsigned long)h >= 0x01000000UL)	/* above the ST's 16 MB */
 		heap_tt += bytes;
 	else
@@ -263,6 +269,8 @@ static HDR *more_core(size_t units)
 	   machine. A small ST gets what it needs, at least 64 KB. */
 	if (want < 65536L)
 		want = 65536L;
+	if (heap_blocks >= 8 && want < 262144L)
+		want = 262144L;		/* a big machine: 2 MB at a time from the 9th */
 	h = core_block(want * sizeof(HDR));
 	if (!h && want > units) {
 		want = units < 8192 ? 8192 : units;

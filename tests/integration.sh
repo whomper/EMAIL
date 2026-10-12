@@ -178,6 +178,11 @@ out=$(run folders 1)
 expect "check: Junk counts updated" "^Junk .*role=5 .*total=1 unread=1" "$out"
 expect "check: Trash counts updated" "^Trash .*role=3 .*total=1 unread=0" "$out"
 expect "check: F30's counts (34 folders: two batches of questions)" "^F30 .*total=1 unread=1" "$out"
+# GEMDOS keeps some of its little internal memory for each directory it
+# has been in: only folders opened get one, not all 30 at every start
+ndirs=$(find "$W/EMAIL" -mindepth 2 -maxdepth 2 -type d -name 'F*' | wc -l)
+if [ "$ndirs" -le 4 ]; then PASS=$((PASS+1)); echo "ok   only opened folders have a directory ($ndirs)"
+else FAIL=$((FAIL+1)); echo "FAIL $ndirs folder directories made, most never opened"; fi
 python3 - $IMAP <<'PY'
 import imaplib, sys
 m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))

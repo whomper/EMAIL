@@ -29,6 +29,7 @@ typedef struct {
 	short local;		/* local-only folder (Outbox, POP Inbox...) */
 	long total, unread;
 	unsigned long synced;	/* runtime: pf_ms() of the last sync, 0 never */
+	short opened;		/* runtime: its directory was used this session */
 } FINFO;
 
 typedef struct {
@@ -176,7 +177,10 @@ void msg_path(FOLDER *f, unsigned long uid, char *out, int size);
 int  msg_save(FOLDER *f, unsigned long uid, const char *data, long len);
 char *msg_load(FOLDER *f, unsigned long uid, long *len);
 /* bodies of IMAP folders (quit without keepcache); each(): the folder being cleared, or 0 */
-void cache_clear_all(void (*each)(const char *account, const char *folder));
+void cache_clear_all(void (*each)(const char *account, const char *folder), int all);
+/* all = 0: only the folders opened this session (on quit: the others
+   were cleared at the end of an earlier one and their directories are
+   left alone, see fold_open) */
 
 /* address book */
 int  abook_add(const char *addr);	/* "Name <a@b>", skips duplicates */

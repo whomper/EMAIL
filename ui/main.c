@@ -1092,7 +1092,7 @@ int main(void)
 	if (cur_folder)
 		fold_close(cur_folder);
 	if (!opt.keepcache)
-		cache_clear_all(quit_clearing);
+		cache_clear_all(quit_clearing, 0);
 	status("Saving the folders and settings...");
 	for (d = 0; d < naccts; d++)
 		folders_save(accts[d]);

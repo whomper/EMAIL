@@ -86,8 +86,11 @@ POP3 *pop3_login(const char *host, unsigned short port, int sec, const char *use
 		 const char *pass, char *err, int errlen)
 {
 	POP3 *p = login_once(host, port, sec, user, pass, err, errlen);
-	if (!p && sec == SEC_STARTTLS && conn_tls_retry)
-		p = login_once(host, port, sec, user, pass, err, errlen);
+	{
+		int tries = 0;	/* ChaCha20 alone, then ECDSA */
+		while (!p && sec == SEC_STARTTLS && conn_tls_retry && tries++ < 2)
+			p = login_once(host, port, sec, user, pass, err, errlen);
+	}
 	return p;
 }
 

@@ -118,6 +118,13 @@ About > shows how the current connection is made ("TLS with the DSP",
 "TLS on the 68030" or "through the gateway"), and the protocol log
 records the cipher and the timings.
 
+EMail first offers the server only ChaCha20-Poly1305, which the 68030
+decrypts twice as fast as AES-GCM; a server that refuses gets every
+cipher on a second try (well under a second, once per session). The log
+says which was used ("secure: TLS 1.2, ECDHE-RSA, ChaCha20-Poly1305").
+A bigger TCP receive window in STinG's configuration (32000 rather than
+10000) lets the Falcon receive while it decrypts.
+
 ## The main window
 
 EMail's main window has three panes, like the GFA Troll it follows and

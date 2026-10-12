@@ -28,11 +28,18 @@ int  tls_load_anchors(const char *path, char *err, int errlen);
 int  tls_anchor_count(void);
 void tls_free_anchors(void);	/* forget them (a new CACERT.PEM) */
 
-/* handshake on a connected socket. rsa_only: ask the server for an RSA
-   certificate (fast to check, on the DSP); 0 also accepts ECDSA.
-   NULL with err filled in on failure; *retry_ecdsa set when the server
-   refused an RSA-only handshake and a new connection should try again */
-TLS *tls_start(int sock, const char *host, int rsa_only, int *retry_ecdsa, char *err, int errlen);
+/* handshake on a connected socket. flags: TLS_RSA_ONLY asks the server
+   for an RSA certificate (fast to check, on the DSP), else ECDSA is
+   accepted too; TLS_CHACHA_ONLY offers only ChaCha20-Poly1305 (twice as
+   fast as AES-GCM on a 68030, and servers that prefer AES can't choose
+   it). NULL with err filled in on failure; *retry then says what a new
+   connection should leave out: TLS_RETRY_ECDSA (accept ECDSA) or
+   TLS_RETRY_ANY_CIPHER (offer every cipher) */
+#define TLS_RSA_ONLY     1
+#define TLS_CHACHA_ONLY  2
+#define TLS_RETRY_ECDSA      1
+#define TLS_RETRY_ANY_CIPHER 2
+TLS *tls_start(int sock, const char *host, int flags, int *retry, char *err, int errlen);
 
 /* like net_read/net_write: > 0 bytes, 0 nothing yet, < 0 closed */
 long tls_read(TLS *t, void *buf, long max);

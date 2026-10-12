@@ -35,6 +35,28 @@ static void note_ecdsa(const char *host)
 	next = (next + 1) % 8;
 }
 
+/* servers that refused ChaCha20 alone: later connections offer every
+   cipher at once */
+static char aes_hosts[8][64];
+
+static int wants_aes(const char *host)
+{
+	int i;
+	for (i = 0; i < 8; i++)
+		if (!strcmp(aes_hosts[i], host))
+			return 1;
+	return 0;
+}
+
+static void note_aes(const char *host)
+{
+	static int next;
+	if (wants_aes(host))
+		return;
+	str_copy(aes_hosts[next], host, sizeof(aes_hosts[0]));
+	next = (next + 1) % 8;
+}
+
 /* TLS on the open socket of c */
 static int start_tls(CONN *c, const char *host, char *err, int errlen)
 {
@@ -52,12 +74,19 @@ static int start_tls(CONN *c, const char *host, char *err, int errlen)
 		snprintf(msg, sizeof(msg), "%d root certificates read in %lu ms", n, pf_ms() - t0);
 		conn_log("TLS", " -- ", msg, strlen(msg));
 	}
-	t = tls_start(c->h, host, !wants_ecdsa(host), &retry, err, errlen);
+	t = tls_start(c->h, host, (wants_ecdsa(host) ? 0 : TLS_RSA_ONLY) | (wants_aes(host) ? 0 : TLS_CHACHA_ONLY),
+		      &retry, err, errlen);
 	if (!t) {
-		conn_log(c->name, " !! ", err, strlen(err));
-		if (retry) {
-			note_ecdsa(host);
+		if (retry == TLS_RETRY_ANY_CIPHER) {
+			conn_log(c->name, " -- ", "no ChaCha20 here: again with every cipher", 41);
+			note_aes(host);
 			conn_tls_retry = 1;
+		} else {
+			conn_log(c->name, " !! ", err, strlen(err));
+			if (retry) {
+				note_ecdsa(host);
+				conn_tls_retry = 1;
+			}
 		}
 		return 0;
 	}
@@ -181,7 +210,7 @@ CONN *conn_open(const char *name, const char *host, unsigned short port, int sec
 		char *err, int errlen)
 {
 	int attempt;
-	for (attempt = 0; attempt < 2; attempt++) {
+	for (attempt = 0; attempt < 3; attempt++) {	/* ChaCha20 alone, then ECDSA */
 		CONN *c = open_plain(name, host, port, err, errlen);
 		if (!c || sec != SEC_TLS)
 			return c;

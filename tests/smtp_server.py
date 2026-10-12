@@ -19,6 +19,9 @@ STARTTLS = len(sys.argv) > 7 and sys.argv[7] == "starttls"
 if len(sys.argv) > 6:
     TLS = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     TLS.load_cert_chain(sys.argv[5], sys.argv[6])
+    if os.environ.get("CIPHERS"):            # e.g. AES only, as some servers
+        TLS.maximum_version = ssl.TLSVersion.TLSv1_2
+        TLS.set_ciphers(os.environ["CIPHERS"])
 
 
 def deliver(rcpt, data):

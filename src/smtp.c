@@ -149,8 +149,11 @@ SMTP *smtp_open(const char *host, unsigned short port, int sec, const char *helo
 		const char *user, const char *pass, char *err, int errlen)
 {
 	SMTP *s = open_once(host, port, sec, helo, user, pass, err, errlen);
-	if (!s && sec == SEC_STARTTLS && conn_tls_retry)
-		s = open_once(host, port, sec, helo, user, pass, err, errlen);
+	{
+		int tries = 0;	/* ChaCha20 alone, then ECDSA */
+		while (!s && sec == SEC_STARTTLS && conn_tls_retry && tries++ < 2)
+			s = open_once(host, port, sec, helo, user, pass, err, errlen);
+	}
 	return s;
 }
 

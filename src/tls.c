@@ -504,6 +504,12 @@ static void get_seed(unsigned char out[48])
 
 /* ---------------- the connection ---------------- */
 
+/* ChaCha20 alone, RSA certificates first: the first try with every server */
+static const uint16_t suites_chacha[] = {
+	BR_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+	BR_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+};
+
 static const uint16_t suites_rsa[] = {
 	BR_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 	BR_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -622,13 +628,14 @@ static int pump(TLS *t, unsigned want, int blocking)
 	}
 }
 
-TLS *tls_start(int sock, const char *host, int rsa_only, int *retry_ecdsa, char *err, int errlen)
+TLS *tls_start(int sock, const char *host, int flags, int *retry, char *err, int errlen)
 {
 	TLS *t;
 	unsigned char seed[48];
 	int r;
-	if (retry_ecdsa)
-		*retry_ecdsa = 0;
+	int rsa_only = flags & TLS_RSA_ONLY, chacha_only = flags & TLS_CHACHA_ONLY;
+	if (retry)
+		*retry = 0;
 	if (!nanchors) {
 		snprintf(err, errlen, "no root certificates loaded");
 		return 0;
@@ -641,12 +648,14 @@ TLS *tls_start(int sock, const char *host, int rsa_only, int *retry_ecdsa, char 
 	t->sock = sock;
 	br_ssl_client_init_full(&t->cc, &t->xc, anchors, nanchors);
 	br_ssl_engine_set_versions(&t->cc.eng, BR_TLS12, BR_TLS12);
-	if (rsa_only) {
+	if (chacha_only)
+		br_ssl_engine_set_suites(&t->cc.eng, suites_chacha, rsa_only ? 1 : 2);
+	else if (rsa_only)
 		br_ssl_engine_set_suites(&t->cc.eng, suites_rsa, sizeof(suites_rsa) / sizeof(suites_rsa[0]));
-		br_ssl_engine_set_ecdsa(&t->cc.eng, 0);
-	} else {
+	else
 		br_ssl_engine_set_suites(&t->cc.eng, suites_all, sizeof(suites_all) / sizeof(suites_all[0]));
-	}
+	if (rsa_only)
+		br_ssl_engine_set_ecdsa(&t->cc.eng, 0);
 	/* the fastest code for a 32-bit CPU without fast 64-bit products */
 	br_ssl_engine_set_ec(&t->cc.eng, &br_ec_all_m31);
 	/* AES-GCM, which iCloud and others choose over ChaCha20: tables
@@ -674,11 +683,16 @@ TLS *tls_start(int sock, const char *host, int rsa_only, int *retry_ecdsa, char 
 		int e = br_ssl_engine_last_error(&t->cc.eng);
 		if (!e)
 			e = BR_ERR_IO;
-		/* 40 handshake_failure, 71 insufficient_security: nothing in
-		   common with an RSA-only hello */
-		if (rsa_only && retry_ecdsa &&
-		    (e == BR_ERR_RECV_FATAL_ALERT + 40 || e == BR_ERR_RECV_FATAL_ALERT + 71))
-			*retry_ecdsa = 1;
+		/* refused with ChaCha20 only (an alert, or a closed connection
+		   from servers that don't bother): try again with every cipher.
+		   40 handshake_failure, 71 insufficient_security with all of
+		   them: nothing in common with an RSA-only hello */
+		if (chacha_only && retry &&
+		    (e == BR_ERR_IO || (e > BR_ERR_RECV_FATAL_ALERT && e < BR_ERR_RECV_FATAL_ALERT + 256)))
+			*retry = TLS_RETRY_ANY_CIPHER;
+		else if (rsa_only && retry &&
+			 (e == BR_ERR_RECV_FATAL_ALERT + 40 || e == BR_ERR_RECV_FATAL_ALERT + 71))
+			*retry = TLS_RETRY_ECDSA;
 		explain(e, host, err, errlen);
 		free(t);
 		return 0;

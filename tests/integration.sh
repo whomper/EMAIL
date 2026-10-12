@@ -467,6 +467,17 @@ PY
   expect "ECDSA-only server: sent after the retry" "sent: 1" "$out"
   grep -q "^[0-9:.]* SMTP -- secure: TLS 1.2, ECDHE-ECDSA" "$W/EMAIL.LOG" && { PASS=$((PASS+1)); echo "ok   ECDSA certificate accepted on the second try"; } || { FAIL=$((FAIL+1)); echo "FAIL no ECDSA session"; }
   cp "$W/EMAIL.INF.keep" "$W/EMAIL.INF"
+
+  # a server without ChaCha20: refused with ChaCha20 alone, then AES-GCM
+  CIPHERS=ECDHE-RSA-AES128-GCM-SHA256 python3 "$ROOT/tests/smtp_server.py" $((SMTP + 442)) "$D" dana secret \
+    "$D/cert.pem" "$D/key.pem" & SMTPPID="$SMTPPID $!"
+  sleep 1
+  sed -i "0,/^dsmtpport=.*/s//dsmtpport=$((SMTP + 442))/" "$W/EMAIL.INF"
+  out=$(run send 1 "$W/msg.txt")
+  expect "AES-only server: sent after offering every cipher" "sent: 1" "$out"
+  grep -q "^[0-9:.]* SMTP -- no ChaCha20 here" "$W/EMAIL.LOG" && grep -q "^[0-9:.]* SMTP -- secure: TLS 1.2, ECDHE-RSA, AES-128-GCM" "$W/EMAIL.LOG" \
+    && { PASS=$((PASS+1)); echo "ok   AES-GCM after ChaCha20 alone was refused"; } || { FAIL=$((FAIL+1)); echo "FAIL no fallback to AES-GCM"; }
+  cp "$W/EMAIL.INF.keep" "$W/EMAIL.INF"
   # every protocol went over EMail's own TLS, both ways of starting it
   for p in IMAP POP3 SMTP; do
     if grep -q "^[0-9:.]* $p -- secure: TLS 1.2" "$W/EMAIL.LOG" 2>/dev/null; then PASS=$((PASS+1)); echo "ok   $p over TLS: $(grep -m1 "^[0-9:.]* $p -- secure" "$W/EMAIL.LOG" | cut -c29-)"

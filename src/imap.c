@@ -410,8 +410,11 @@ IMAP *imap_login(const char *host, unsigned short port, int sec, const char *use
 {
 	IMAP *im = login_once(host, port, sec, user, pass, err, errlen);
 	/* a server with only an ECDSA certificate: once more, accepting it */
-	if (!im && sec == SEC_STARTTLS && conn_tls_retry)
-		im = login_once(host, port, sec, user, pass, err, errlen);
+	{
+		int tries = 0;	/* ChaCha20 alone, then ECDSA */
+		while (!im && sec == SEC_STARTTLS && conn_tls_retry && tries++ < 2)
+			im = login_once(host, port, sec, user, pass, err, errlen);
+	}
 	return im;
 }
 

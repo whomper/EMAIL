@@ -426,7 +426,7 @@ if [ -n "${FALCON:-}" ]; then
   sed -i "0,/^dport=.*/s//dport=$IMAP/; 0,/^dsec=1/s//dsec=2/" "$W/EMAIL.INF"
   out=$(run folders 1)
   expect "IMAP STARTTLS" "^Sent " "$out"
-  grep -q "^IMAP >> T[0-9]* STARTTLS" "$W/EMAIL.LOG" && { PASS=$((PASS+1)); echo "ok   IMAP sent STARTTLS"; } || { FAIL=$((FAIL+1)); echo "FAIL IMAP STARTTLS not in the log"; }
+  grep -q "^[0-9:.]* IMAP >> T[0-9]* STARTTLS" "$W/EMAIL.LOG" && { PASS=$((PASS+1)); echo "ok   IMAP sent STARTTLS"; } || { FAIL=$((FAIL+1)); echo "FAIL IMAP STARTTLS not in the log"; }
   cp "$W/EMAIL.INF.keep" "$W/EMAIL.INF"
 
   # Falcon mode has its own password: a wrong one there fails in words,
@@ -442,7 +442,7 @@ open(p, "w", newline="").write(s)
 PY
   out=$(run folders 1)
   expect "wrong Falcon-mode password refused, in words" "refused the user name or password" "$out"
-  grep -q "^IMAP -- logging in: user name 4 characters without @, password 10 characters (1 '-'" "$W/EMAIL.LOG" \
+  grep -q "^[0-9:.]* IMAP -- logging in: user name 4 characters without @, password 10 characters (1 '-'" "$W/EMAIL.LOG" \
     && { PASS=$((PASS+1)); echo "ok   login shape in the log"; } || { FAIL=$((FAIL+1)); echo "FAIL no login shape in the log"; }
   grep -q "wrong-pass" "$W/EMAIL.LOG" && { FAIL=$((FAIL+1)); echo "FAIL password in the log"; } || { PASS=$((PASS+1)); echo "ok   password not in the log"; }
   grep -q "^pass=secret" "$W/EMAIL.INF" && { PASS=$((PASS+1)); echo "ok   the gateway's password kept apart"; } || { FAIL=$((FAIL+1)); echo "FAIL gateway password changed"; }
@@ -465,14 +465,14 @@ PY
   sed -i "0,/^dsmtpport=.*/s//dsmtpport=$((SMTP + 441))/" "$W/EMAIL.INF"
   out=$(run send 1 "$W/msg.txt")
   expect "ECDSA-only server: sent after the retry" "sent: 1" "$out"
-  grep -q "^SMTP -- secure: TLS 1.2, ECDHE-ECDSA" "$W/EMAIL.LOG" && { PASS=$((PASS+1)); echo "ok   ECDSA certificate accepted on the second try"; } || { FAIL=$((FAIL+1)); echo "FAIL no ECDSA session"; }
+  grep -q "^[0-9:.]* SMTP -- secure: TLS 1.2, ECDHE-ECDSA" "$W/EMAIL.LOG" && { PASS=$((PASS+1)); echo "ok   ECDSA certificate accepted on the second try"; } || { FAIL=$((FAIL+1)); echo "FAIL no ECDSA session"; }
   cp "$W/EMAIL.INF.keep" "$W/EMAIL.INF"
   # every protocol went over EMail's own TLS, both ways of starting it
   for p in IMAP POP3 SMTP; do
-    if grep -q "^$p -- secure: TLS 1.2" "$W/EMAIL.LOG" 2>/dev/null; then PASS=$((PASS+1)); echo "ok   $p over TLS: $(grep -m1 "^$p -- secure" "$W/EMAIL.LOG" | cut -c17-)"
+    if grep -q "^[0-9:.]* $p -- secure: TLS 1.2" "$W/EMAIL.LOG" 2>/dev/null; then PASS=$((PASS+1)); echo "ok   $p over TLS: $(grep -m1 "^[0-9:.]* $p -- secure" "$W/EMAIL.LOG" | cut -c29-)"
     else FAIL=$((FAIL+1)); echo "FAIL $p not over TLS"; fi
   done
-  if grep -q "^IMAP >> T[0-9]* STARTTLS\|^POP3 >> STLS" "$W/EMAIL.LOG" && grep -q "^SMTP >> STARTTLS" "$W/EMAIL.LOG"; then
+  if grep -q "^[0-9:.]* IMAP >> T[0-9]* STARTTLS\|^[0-9:.]* POP3 >> STLS" "$W/EMAIL.LOG" && grep -q "^[0-9:.]* SMTP >> STARTTLS" "$W/EMAIL.LOG"; then
     PASS=$((PASS+1)); echo "ok   STARTTLS used where asked"
   else FAIL=$((FAIL+1)); echo "FAIL STARTTLS not used"; fi
   if grep -q " >> .*\(LOGIN\|AUTH\|PASS\)" "$W/EMAIL.LOG" && ! grep -q "secret" "$W/EMAIL.LOG"; then

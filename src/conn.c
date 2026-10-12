@@ -112,10 +112,32 @@ static void log_add(const char *s, long n)
 	}
 }
 
+/* "14:05:31.27 ": the time of day once (the Atari's clock counts in
+   2-second steps), the 200 Hz timer from there on */
+static void log_stamp(void)
+{
+	static unsigned long base_ms, base_s;
+	static int have;
+	unsigned long t;
+	char st[16];
+	if (!have) {
+		PFTIME now;
+		pf_now(&now);
+		base_s = now.hour * 3600UL + now.min * 60UL + now.sec;
+		base_ms = pf_ms();
+		have = 1;
+	}
+	t = base_s * 100UL + (pf_ms() - base_ms) / 10;
+	snprintf(st, sizeof(st), "%02lu:%02lu:%02lu.%02lu ", t / 360000UL % 24, t / 6000UL % 60,
+		 t / 100UL % 60, t % 100UL);
+	log_add(st, strlen(st));
+}
+
 void conn_log(const char *who, const char *dir, const char *text, long n)
 {
 	if (!conn_logfile[0])
 		return;
+	log_stamp();
 	log_add(who, strlen(who));
 	log_add(dir, strlen(dir));
 	if (n > 400) {

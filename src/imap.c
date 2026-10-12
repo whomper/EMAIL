@@ -230,6 +230,11 @@ int imap_has(IMAP *im, const char *cap)
 static void untagged(IMAP *im, const char *s)
 {
 	const char *p;
+	/* only the first line: after it may come a whole message (a
+	   literal), and searching a megabyte four times takes seconds */
+	char *cr = strchr((char *)s, '\r');
+	if (cr)
+		*cr = 0;
 	if (str_istr(s, "CAPABILITY "))
 		note_caps(im, s);
 	if ((p = str_istr(s, "[UIDVALIDITY ")))
@@ -244,6 +249,8 @@ static void untagged(IMAP *im, const char *s)
 		if (!strncasecmp(e, " EXISTS", 7))
 			im->exists = n;
 	}
+	if (cr)
+		*cr = '\r';
 }
 
 typedef void (*UNTAGGED)(IMAP *im, void *ud, const char *s, long n);

@@ -167,15 +167,14 @@ void dlg_about(void)
 			online = 1;
 	snprintf(conn, sizeof(conn), "%s  \xF9  %s  \xF9  %s",
 		 strcmp(net_stack(), "none") ? net_stack() : "no network",
-		 opt.falcon ? (strcmp(falcon_dsp_state(), "DSP") ? "TLS on the 68030" : "TLS with the DSP")
-			    : "through the gateway",
+		 opt.falcon ? (strcmp(falcon_dsp_state(), "DSP") ? "Falcon" : "Falcon/DSP") : "Gateway",
 		 opt.offline ? "offline" : online ? "online" : "ready");
 
 	dw = 50 * cw;
 	if (dw > desk_w - 2 * cw)
 		dw = desk_w - 2 * cw;
 	dh = lh + ih + lh / 2 + lh + (lh + lh / 2) + (lh + lh / 2) + lh / 4 + lh +
-	     (lh + lh / 2) + lh + lh + (lh + lh / 2) + lh / 2 + bh + lh;
+	     (lh + lh / 2) + lh + (lh + lh / 2) + lh / 2 + bh + lh;
 	if (dh > desk_h - 4)
 		dh = desk_h - 4;
 	dx = desk_x + (desk_w - dw) / 2;
@@ -232,8 +231,6 @@ void dlg_about(void)
 		char where[60], avail[60];
 		pf_memory(where, sizeof(where), avail, sizeof(avail));
 		center(y, where, 0);
-		y += lh;
-		center(y, avail, 0);
 	}
 	y += lh + lh / 2;
 	button(dx + (dw - bw) / 2, by, bw, bh, "OK");

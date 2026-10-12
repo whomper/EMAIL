@@ -197,8 +197,8 @@ and the memory it runs in. EMail loads itself and keeps its data in TT
 RAM (the fast RAM of a TT, or of a Falcon with an accelerator card)
 whenever the machine has some: faster, and more room than ST RAM. The
 About box says "Running in TT RAM", or "Running in ST RAM (TT RAM not
-used)" when the program file's TT RAM flags were switched off, and how
-much of each is free.
+used)" when the program file's TT RAM flags were switched off. It also
+names the connection: Gateway, Falcon (TLS on the 68030) or Falcon/DSP.
 
 ## Writing
 

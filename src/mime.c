@@ -650,6 +650,22 @@ MSG *mime_parse(const char *raw, long len)
 	walk(&w, 0, len, 0, 0);
 	m->textlen = w.text.len;
 	m->text = sb_steal(&w.text);
+	/* with memory short any of these can be missing, and every caller
+	   reads them: no message rather than half of one (on the Atari a
+	   missing one is a read at address 0, two bombs) */
+	if (!m->from || !m->to || !m->cc || !m->reply_to || !m->subject || !m->date ||
+	    !m->message_id || !m->references || !m->in_reply_to || !m->list_post || !m->text) {
+		mime_free(m);
+		return 0;
+	}
+	{
+		short i;
+		for (i = 0; i < m->nparts; i++)
+			if (!m->parts[i].name || !m->parts[i].type) {
+				mime_free(m);
+				return 0;
+			}
+	}
 	return m;
 }
 

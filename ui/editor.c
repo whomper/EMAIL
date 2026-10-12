@@ -117,6 +117,10 @@ static void set_title(void)
 void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
 {
 	const char *p;
+	if (!text) {
+		alert(1, "[1][Not enough memory to|start this message.][ OK ]");
+		return;
+	}
 	if (w_editor.h > 0 && dirty) {
 		if (alert(2, "[2][You are still writing a message.|Discard it?][Discard|Cancel]") != 1) {
 			free(text);

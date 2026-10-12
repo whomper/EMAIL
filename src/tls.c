@@ -649,6 +649,12 @@ TLS *tls_start(int sock, const char *host, int rsa_only, int *retry_ecdsa, char 
 	}
 	/* the fastest code for a 32-bit CPU without fast 64-bit products */
 	br_ssl_engine_set_ec(&t->cc.eng, &br_ec_all_m31);
+	/* AES-GCM, which iCloud and others choose over ChaCha20: tables
+	   instead of BearSSL's constant-time default (33 KB/s against 22 on
+	   a 50 MHz Falcon in fast RAM; timing attacks need a shared machine,
+	   not an Atari on a desk), and the faster GHASH */
+	br_ssl_engine_set_aes_ctr(&t->cc.eng, &br_aes_big_ctr_vtable);
+	br_ssl_engine_set_ghash(&t->cc.eng, &br_ghash_ctmul);
 	br_ssl_engine_set_rsavrfy(&t->cc.eng, rsa_vrfy);
 	br_ssl_client_set_rsapub(&t->cc, rsa_public);
 	br_x509_minimal_set_rsa(&t->xc, rsa_vrfy);

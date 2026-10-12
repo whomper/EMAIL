@@ -355,6 +355,30 @@ expect "progress: headers counted with a bar" "Big - headers 100 of 100  \[#####
 expect "big folder: server count, only 100 mirrored" "synced: 250 total, 6 unread, .* 100 loaded" "$out"
 out=$(run list 1 Big)
 expect "big folder: newest message mirrored" "Big 250" "$out"
+
+# a message with a 1 MB attachment: downloaded, saved and opened whole
+python3 - $IMAP <<'PY'
+import imaplib, sys, base64, os
+m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
+m.login("dana", "secret")
+att = base64.encodebytes(os.urandom(1024 * 1024)).replace(b"\n", b"\r\n")
+msg = (b"From: big@example.com\r\nTo: dana@test.local\r\nSubject: Large attachment\r\n"
+       b"Date: Mon, 12 Oct 2026 10:00:00 +0000\r\nMIME-Version: 1.0\r\n"
+       b"Content-Type: multipart/mixed; boundary=XX\r\n\r\n--XX\r\n"
+       b"Content-Type: text/plain\r\n\r\nSee the file.\r\n--XX\r\n"
+       b"Content-Type: application/octet-stream; name=big.bin\r\n"
+       b"Content-Transfer-Encoding: base64\r\n\r\n" + att + b"--XX--\r\n")
+m.create("Huge")
+m.append("Huge", "()", None, msg)
+m.logout()
+PY
+run folders 1 >/dev/null
+run sync 1 Huge >/dev/null
+out=$(run list 1 Huge)
+UB=$(uid_of "$out" "Large attachment")
+out=$(run show 1 Huge "$UB")
+expect "1 MB attachment: the message opens" "See the file." "$out"
+expect "1 MB attachment: listed" "Attachment: big.bin" "$out"
 if grep -q "Big 150" <<<"$out"; then FAIL=$((FAIL+1)); echo "FAIL big folder: old message mirrored too early"; else PASS=$((PASS+1)); echo "ok   big folder: older messages stay on the server"; fi
 out=$(run more 1 Big)
 expect "load more: the next 100" "added: 100, loaded 200 of 250" "$out"

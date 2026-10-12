@@ -625,6 +625,8 @@ static void pop_cb(void *ud, long num, const char *uid, long size)
 		return;
 	prog_start(0, size, 0, "%s: downloading message %ld", c->a->name, c->got + 1);
 	sb_init(&msg);
+	if (size > 4096)
+		sb_reserve(&msg, size + 1024);	/* the size LIST gave: no doubling */
 	r = pop3_retr(c->p, num, &msg);
 	prog_end();
 	if (r <= 0) {
@@ -777,17 +779,6 @@ int mail_check(ACCOUNT *a, long *newmsgs)
 
 /* ---------------- reading and changing ---------------- */
 
-typedef struct {
-	SBUF body;
-} BODYCTX;
-
-static void body_cb(void *ud, IMAPFETCH *f)
-{
-	BODYCTX *c = ud;
-	if (f->body)
-		sb_add(&c->body, f->body, f->bodylen);
-}
-
 char *mail_fetch(FOLDER *f, HDR *h, long *len)
 {
 	char *raw = 0;
@@ -795,8 +786,8 @@ char *mail_fetch(FOLDER *f, HDR *h, long *len)
 	if (h->flags & MF_CACHED || f->fi->local)
 		raw = msg_load(f, h->uid, len);
 	if (!raw && !f->fi->local) {
-		BODYCTX c;
-		char set[16];
+		char *body = 0;
+		long blen = 0;
 		int r;
 		unsigned long t0;
 		long b0;
@@ -805,26 +796,23 @@ char *mail_fetch(FOLDER *f, HDR *h, long *len)
 		prog_start(0, h->size, 0, "%s: downloading the message", a->name);
 		t0 = pf_ms();
 		b0 = conn_bytes;
-		sb_init(&c.body);
-		snprintf(set, sizeof(set), "%lu", h->uid);
-		r = imap_fetch(a->im, set, "(UID BODY.PEEK[])", body_cb, &c);
+		r = imap_fetch_body(a->im, h->uid, &body, &blen);
 		prog_end();
 		if (r <= 0) {
-			sb_free(&c.body);
 			imap_failed(a, r);
 			return 0;
 		}
-		if (!c.body.s) {
+		if (!body) {
 			str_copy(mail_err, "The message is no longer on the server.", sizeof(mail_err));
 			return 0;
 		}
 		timing(t0, b0, "message %lu", h->uid);
-		msg_save(f, h->uid, c.body.s, c.body.len);
+		msg_save(f, h->uid, body, blen);
 		h->flags |= MF_CACHED;
 		f->dirty = 1;
 		if (len)
-			*len = c.body.len;
-		raw = sb_steal(&c.body);
+			*len = blen;
+		raw = body;
 		status("");
 	}
 	if (!raw) {

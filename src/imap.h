@@ -67,6 +67,8 @@ int imap_fetch_seq(IMAP *im, const char *seqset, const char *items,
 		   void (*cb)(void *ud, IMAPFETCH *f), void *ud);
 /* message and unseen counts of a mailbox without selecting it */
 int imap_status(IMAP *im, const char *mbox, long *messages, long *unseen);
+/* a whole message (BODY.PEEK[]), malloc'ed; *body 0 when it is gone */
+int imap_fetch_body(IMAP *im, unsigned long uid, char **body, long *len);
 /* the same for n folders at once: the questions go out together and the
    answers come back in one wait. A folder the server refuses stays -1;
    -1 when the connection fails */

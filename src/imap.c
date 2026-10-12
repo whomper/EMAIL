@@ -171,6 +171,8 @@ static int read_response(IMAP *im)
 {
 	SBUF line;
 	sb_init(&line);
+	if (im->resp.cap > 65536L)
+		sb_free(&im->resp);	/* the last one was a big message: let it go */
 	sb_reset(&im->resp);
 	for (;;) {
 		long n = conn_getline(im->c, &line), lit;
@@ -190,6 +192,11 @@ static int read_response(IMAP *im)
 		}
 		lit = strtol(br + 1, 0, 10);
 		sb_adds(&im->resp, "\r\n");
+		if (lit > 4096 && !sb_reserve(&im->resp, lit + 64)) {
+			str_copy(im->err, "not enough memory for this message", sizeof(im->err));
+			sb_free(&line);
+			return -1;
+		}
 		if (!conn_getbytes(im->c, &im->resp, lit)) {
 			str_copy(im->err, im->c->err, sizeof(im->err));
 			sb_free(&line);
@@ -554,6 +561,56 @@ int imap_fetch(IMAP *im, const char *uidset, const char *items,
 	fc.cb = cb;
 	fc.ud = ud;
 	return run(im, 0, fetch_cb, &fc, "UID FETCH %s %s", uidset, items);
+}
+
+/* one message's whole text, taken over from the response buffer rather
+   than copied: a 1 MB message needs 1 MB, not three */
+typedef struct {
+	const char *body;
+	long len;
+	char *out;
+	long outlen;
+} STEAL;
+
+static void steal_note(void *ud, IMAPFETCH *f)
+{
+	STEAL *st = ud;
+	if (f->body) {
+		st->body = f->body;
+		st->len = f->bodylen;
+	}
+}
+
+static void steal_cb(IMAP *im, void *ud, const char *s, long n)
+{
+	STEAL *st = ud;
+	FETCHCB fc;
+	fc.cb = steal_note;
+	fc.ud = st;
+	st->body = 0;
+	fetch_cb(im, &fc, s, n);
+	if (st->body && !st->out && im->resp.s) {
+		memmove(im->resp.s, st->body, st->len);
+		im->resp.s[st->len] = 0;
+		st->out = im->resp.s;
+		st->outlen = st->len;
+		sb_init(&im->resp);	/* the buffer is the caller's now */
+	}
+}
+
+int imap_fetch_body(IMAP *im, unsigned long uid, char **body, long *len)
+{
+	STEAL st;
+	int r;
+	memset(&st, 0, sizeof(st));
+	r = run(im, 0, steal_cb, &st, "UID FETCH %lu (UID BODY.PEEK[])", uid);
+	if (r <= 0) {
+		free(st.out);
+		st.out = 0;
+	}
+	*body = st.out;
+	*len = st.outlen;
+	return r;
 }
 
 int imap_fetch_seq(IMAP *im, const char *seqset, const char *items,

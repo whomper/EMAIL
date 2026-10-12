@@ -44,6 +44,21 @@ static int grow(SBUF *b, long need)
 	return 1;
 }
 
+/* a big piece of known size: just the room it needs, where doubling
+   would take up to twice as much (and the old and new copy at once) */
+int sb_reserve(SBUF *b, long more)
+{
+	char *n;
+	if (b->len + more + 1 <= b->cap)
+		return 1;
+	n = realloc(b->s, b->len + more + 1);
+	if (!n)
+		return 0;
+	b->s = n;
+	b->cap = b->len + more + 1;
+	return 1;
+}
+
 int sb_add(SBUF *b, const char *s, long n)
 {
 	if (!grow(b, n))

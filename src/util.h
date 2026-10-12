@@ -16,6 +16,7 @@ void sb_init(SBUF *b);
 void sb_free(SBUF *b);
 void sb_reset(SBUF *b);
 int  sb_add(SBUF *b, const char *s, long n);
+int  sb_reserve(SBUF *b, long more);	/* room for exactly `more` bytes more, no doubling */
 int  sb_adds(SBUF *b, const char *s);
 int  sb_addc(SBUF *b, char c);
 int  sb_printf(SBUF *b, const char *fmt, ...) __attribute__((format(printf, 2, 3)));

@@ -38,6 +38,10 @@ static short sizes[MAXSIZE], nsizes;
 static char size_label[MAXSIZE][12];
 
 short heb_mode;			/* HM_*: how this font gets its Hebrew */
+static short heb_why;		/* HM_SYSTEM: why */
+#define HW_NONE     0
+#define HW_NOHEB    1		/* the font has no Hebrew letters */
+#define HW_NOLOOKUP 2		/* the VDI can't look letters up (no NVDI 5) */
 unsigned short heb_idx[27];	/* HM_UNICODE: the font's index of each letter */
 static short cur_id = 1, cur_pt, probed_id = -1;
 
@@ -53,7 +57,7 @@ static short format_of(short id);
    system font draws them */
 static void probe_hebrew(short id)
 {
-	static short probed_mode;
+	static short probed_mode, probed_why;
 	short k, fmt;
 	if (id == 1) {
 		heb_mode = HM_MAP;
@@ -61,25 +65,37 @@ static void probe_hebrew(short id)
 	}
 	if (id == probed_id) {
 		heb_mode = probed_mode;
+		heb_why = probed_why;
 		return;
 	}
 	probed_id = id;
 	heb_mode = HM_MAP;
+	heb_why = HW_NONE;
 	fmt = format_of(id);
-	if (fmt == 2 || fmt == 4 || fmt == 8) {
-		heb_mode = HM_SYSTEM;
-		if (vst_map_mode(vdi_h, 1) == 1) {
+	/* a bitmap font draws the Atari codes itself; a vector font (or one
+	   whose kind the VDI doesn't say) is asked for its Hebrew letters */
+	if (fmt != 1) {
+		long a = vqt_char_index(vdi_h, 'A', 1, 0);
+		if (a > 0) {
 			for (k = 0; k < 27; k++) {
 				long i = vqt_char_index(vdi_h, (unsigned short)(0x5D0 + heb_uni[k]), 2, 0);
 				if (i <= 0)
 					break;
 				heb_idx[k] = (unsigned short)i;
 			}
-			if (k == 27)
+			if (k == 27) {
 				heb_mode = HM_UNICODE;
+			} else {
+				heb_mode = HM_SYSTEM;
+				heb_why = HW_NOHEB;
+			}
+		} else if (fmt) {
+			heb_mode = HM_SYSTEM;	/* a vector font, and no NVDI 5 to ask */
+			heb_why = HW_NOLOOKUP;
 		}
 	}
 	probed_mode = heb_mode;
+	probed_why = heb_why;
 }
 
 /* set the font; cw/ch become its cell size. 0 if it isn't there */
@@ -429,7 +445,7 @@ static void list_show(LIST *l, short k)
 /* ---------------- the dialog ---------------- */
 
 static short o_ok, o_type, o_prev, o_heb[3];
-static char type_line[48];
+static char type_line[64];
 
 static void draw_obj(short obj)
 {
@@ -477,11 +493,13 @@ static void draw_type(void)
 	FAM *f = &fam[lf.sel];
 	short x, y, n;
 	GRECT r;
-	if (f->format == 2 || f->format == 4 || f->format == 8) {
+	if (f->id != 1 && f->format != 1) {
 		/* setting it says where its Hebrew comes from */
 		set_font(f->id, chosen_pt() ? chosen_pt() : 12);
 		snprintf(type_line, sizeof(type_line), "%s, Hebrew %s", format_name(f),
-			 heb_mode == HM_UNICODE ? "from the font" : "in the system font");
+			 heb_mode == HM_UNICODE ? "from the font" :
+			 heb_why == HW_NOHEB ? "in the system font (none in it)" :
+			 heb_why == HW_NOLOOKUP ? "in the system font (no NVDI 5)" : "as the font has it");
 		use_sys();
 	} else {
 		snprintf(type_line, sizeof(type_line), "%s", format_name(f));
@@ -629,7 +647,7 @@ void font_menu(void)
 	o_ok = d_button(53, 4, 9, "OK", EXIT | DEFAULT);
 	o_cancel = d_button(53, 6, 9, "Cancel", EXIT);
 	d_text(2, 14, "Type:");
-	o_type = d_add(G_IBOX, 0, 0, 0L, 8, 14, 43, 1);
+	o_type = d_add(G_IBOX, 0, 0, 0L, 8, 14, 54, 1);
 	d_text(2, 16, "Hebrew in bitmap fonts: pick the sample that reads right");
 	for (i = 0; i < 3; i++)
 		o_heb[i] = d_add(G_BUTTON, SELECTABLE | RBUTTON, i == sel_heb ? SELECTED : 0,

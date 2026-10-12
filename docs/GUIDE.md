@@ -113,9 +113,10 @@ Gmail `imap.gmail.com` 993 and `smtp.gmail.com` 465. Either way EMail
 never sends a password over an unencrypted connection in Falcon mode.
 
 Connecting takes a few seconds on a 50 MHz Falcon; after that mail comes
-in at modem-to-ISDN speeds (about 60 KB/s), which is plenty for text.
-About > shows how the current connection is made ("TLS with the DSP",
-"TLS on the 68030" or "through the gateway"), and the protocol log
+in at 15 to 25 KB/s (the 68030 decrypts every byte; through the Pi it is
+about 37 KB/s), which is plenty for text.
+About > shows how the current connection is made (Falcon/DSP, Falcon
+or Gateway), and the protocol log
 records the cipher and the timings.
 
 EMail first offers the server only ChaCha20-Poly1305, which the 68030

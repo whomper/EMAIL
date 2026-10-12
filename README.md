@@ -84,6 +84,32 @@ reuses parts of Claude ST
 freestanding TOS runtime, GEM bindings, STinG client, Hebrew
 right-to-left layout and keyboard, and the Hatari test tools.
 
+## Performance: Pi, 68030 and DSP
+
+What costs time is the TLS handshake, once per connection: EMail keeps
+its IMAP connection open, so that is once per session, plus once for
+each batch of mail sent.
+
+| | Pi gateway | Falcon mode, 68030 only | Falcon mode, 68030 + DSP |
+|---|---|---|---|
+| Machines | any Atari, 68000 ST too | Falcon, TT (68030) | Falcon |
+| Handshake, stock 16 MHz Falcon | done by the Pi, a fraction of a second | about 9.6 s | about 2.5 s |
+| Handshake, 50 MHz Falcon in TT/fast RAM | done by the Pi | about 5 s | about 1.5 s |
+| Reading mail once connected | as fast as STinG/MiNTnet carry it | 39 KB/s (16 MHz), 66 KB/s (50 MHz, fast RAM) | the same: the DSP only helps the handshake |
+| Work on the Atari | none, plain IMAP/SMTP | all of TLS | TLS, RSA checks on the DSP |
+
+In a handshake the 68030 does the key exchange (X25519, 0.5 to 1 s each,
+two of them) and the DSP56001 the three RSA-2048 certificate checks
+(about 0.12 s each instead of 1.3 to 2.5 s). Running from TT/fast RAM
+matters as much as the clock: ST RAM is 16 bits wide and shared with the
+video, so EMail loads itself into TT RAM when there is some (the About
+box says where it runs). A 68000 ST has no chance of TLS in reasonable
+time and always goes through the Pi.
+
+The 50 MHz figures were measured on a real Falcon with a DFB1X board,
+the 16 MHz ones in cycle-exact emulation; details in
+[tools/tlsbench](tools/tlsbench/README.md).
+
 ## Getting started
 
 1. Copy `EMAIL.PRG` into a folder of its own on your Atari, e.g. `C:\EMAIL\`.

@@ -3,28 +3,61 @@
 <img src="docs/icon16.png" width="96" align="right" alt="EMail icon: an Atari SM124-style monitor showing an envelope">
 
 An e-mail program for the Atari ST, STE, TT and Falcon, written in C for
-GEM. It reads mail over IMAP or POP3, sends it over SMTP, keeps a mirror
-of your IMAP folders on disk so you can read offline, and reads and
-writes Hebrew. 
+GEM.
+
+**Highlights**
+
+- **IMAP and POP3 in, SMTP out**, with an Outbox for sending later and
+  copies in Sent
+- **Two ways to reach today's providers:** a Raspberry Pi gateway for any
+  Atari, or **Falcon mode** with TLS 1.2 on the Atari itself and RSA on
+  the Falcon's DSP
+- **Hebrew throughout:** UTF-8, ISO-8859-8 and windows-1255 mail,
+  right-to-left layout, the Israeli keyboard on F10, Hebrew in vector
+  fonts through NVDI
+- **Works offline:** a mirror of your folders and the messages you've
+  read on disk; read, flag and move offline, the server catches up later
+- **Fast checks:** the Inbox is fetched and every other folder's counts
+  are asked for in one go, so new mail filed in Junk or by server rules
+  shows up too
+- **Bulk operations:** select several messages and mark read or unread,
+  flag, move or delete them together
+- **Folders:** create, rename and delete; an alphabetical folder picker
+  for moving messages
+- **Modern but Atari:** one window with draggable panes, right-click
+  menus, colour on 16- and 256-colour screens, a Settings dialog with a
+  sidebar, progress on the status line
+- **Runs in TT RAM** when the machine has some
+- **Your time zone by name** (Asia/Jerusalem, Europe/London...), with
+  summer time worked out by itself and found from the machine when it
+  says
+- **Passwords encrypted** in EMAIL.INF, hidden behind an eye button in
+  the dialogs
+- Runs on TOS 1.04 to 4.x, EmuTOS, MagiC and MiNT, with STinG or MiNTnet,
+  from a 68000 ST in medium resolution to a Falcon in 640×480
+
+**In more detail**
 
 - IMAP with a local mirror: headers of the newest messages and every
   message you've read, kept in step with the server; big folders load
-  100 messages at a time, with "Load more" for older ones
+  100 messages at a time, with "Load more" for older ones. Read and flag
+  changes are sent in one go when you pause, and at the latest on quit
 - POP3 that downloads into local folders and never fetches a message twice
-- SMTP with login (AUTH PLAIN/LOGIN), an Outbox for sending later, copies
-  in Sent
+- SMTP with login (AUTH PLAIN/LOGIN)
 - Reply, reply to all, forward (with the original's attachments), flags,
-  move, delete to Trash, folders, address book, signatures
+  move, delete to Trash, mark a whole folder read, address book, a
+  two-line signature
 - Attachments: save them with the file selector; attach files when writing
 - HTML-only mail shown as text
-- Hebrew: UTF-8, ISO-8859-8 and windows-1255 mail, Hebrew subjects, names,
-  file names and folder names, right-to-left layout, and the Israeli
-  keyboard on F10
-- One main window with draggable panes (folders, list, message), right-click
-  menus, a choice of fonts (GDOS fonts too), passwords hidden behind an eye
-  button; window and pane sizes are kept between sessions
-- Runs on TOS 1.04 to 4.x, EmuTOS, MagiC and MiNT, with STinG or
-  MiNTnet; from a 68000 ST in medium resolution to a Falcon in 640×480
+- Dates with the year, numbers with thousands separators
+- Fonts: the system font in two sizes and any monospaced GDOS font
+  (bitmap, Speedo, TrueType); the selector lists only the fonts EMail can
+  use. A vector font's Hebrew letters are found through NVDI 5 by
+  Unicode (FreeMono and Liberation Mono have them); a font without them
+  gets its Hebrew drawn in the system font
+- Separate server settings for the gateway and for Falcon mode, so
+  switching between them keeps both
+- EMAIL.INF in capitals, each setting with a note above it
 
 Mail providers want encrypted connections. EMail reaches them one of two
 ways, switched with Options > Falcon mode:
@@ -37,7 +70,7 @@ on:             Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) --STinG/MiNTnet--TLS
 - **Off**, on any Atari: a Raspberry Pi on your network does the
   encryption, see [gateway/README.md](gateway/README.md). A server that
   accepts plain connections can be used directly.
-- **On**, on a Falcon or TT with 4 MB or more: EMail does TLS 1.2 itself
+- **On**, on a Falcon or TT with 4 MB or more (TT RAM helps): EMail does TLS 1.2 itself
   with [BearSSL](https://bearssl.org/) (third_party/bearssl), built for
   the 68030, and the Falcon's DSP56001 checks the servers' RSA
   signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in this repository)

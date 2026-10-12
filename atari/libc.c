@@ -237,19 +237,40 @@ typedef union hdr {
 static HDR base;
 static HDR *freep;
 
-static HDR *more_core(size_t units)
+long heap_tt, heap_st;		/* bytes the heap took from TT/Fast and ST RAM */
+
+/* one block from GEMDOS, TT/Fast RAM preferred; 0 when there is none */
+static HDR *core_block(size_t bytes)
 {
-	size_t bytes;
-	HDR *h;
-	if (units < 8192)
-		units = 8192;		/* 64 KB at a time */
-	bytes = units * sizeof(HDR);
-	h = Mxalloc(bytes, 3);
+	HDR *h = Mxalloc(bytes, 3);
 	if ((long)h == -32 || (long)h <= 0)
 		h = Malloc(bytes);
 	if ((long)h <= 0)
 		return 0;
-	h->s.units = units;
+	if ((unsigned long)h >= 0x01000000UL)	/* above the ST's 16 MB */
+		heap_tt += bytes;
+	else
+		heap_st += bytes;
+	return h;
+}
+
+static HDR *more_core(size_t units)
+{
+	HDR *h;
+	size_t want = units;
+	/* 512 KB at a time, as ECal: every GEMDOS block takes one of the few
+	   memory descriptors TOS has, and running out of those crashes the
+	   machine. A small ST gets what it needs, at least 64 KB. */
+	if (want < 65536L)
+		want = 65536L;
+	h = core_block(want * sizeof(HDR));
+	if (!h && want > units) {
+		want = units < 8192 ? 8192 : units;
+		h = core_block(want * sizeof(HDR));
+	}
+	if (!h)
+		return 0;
+	h->s.units = want;
 	free(h + 1);
 	return freep;
 }

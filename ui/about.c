@@ -175,7 +175,7 @@ void dlg_about(void)
 	if (dw > desk_w - 2 * cw)
 		dw = desk_w - 2 * cw;
 	dh = lh + ih + lh / 2 + lh + (lh + lh / 2) + (lh + lh / 2) + lh / 4 + lh +
-	     (lh + lh / 2) + (lh + lh / 2) + lh / 2 + bh + lh;
+	     (lh + lh / 2) + lh + lh + (lh + lh / 2) + lh / 2 + bh + lh;
 	if (dh > desk_h - 4)
 		dh = desk_h - 4;
 	dx = desk_x + (desk_w - dw) / 2;
@@ -226,6 +226,15 @@ void dlg_about(void)
 	center(y, "\xBD 2026 Erez Yaary", 0);
 	y += lh + lh / 2;
 	center(y, conn, 0);
+	y += lh;
+	/* the memory it runs in: TT RAM when there is some */
+	{
+		char where[60], avail[60];
+		pf_memory(where, sizeof(where), avail, sizeof(avail));
+		center(y, where, 0);
+		y += lh;
+		center(y, avail, 0);
+	}
 	y += lh + lh / 2;
 	button(dx + (dw - bw) / 2, by, bw, bh, "OK");
 	graf_mouse(M_ON, 0);

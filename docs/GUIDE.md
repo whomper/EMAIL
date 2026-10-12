@@ -192,7 +192,13 @@ without Hebrew (Bitstream's Speedo fonts, or an older NVDI) says
 "Hebrew in the system font": the letters are then drawn in the system
 font, in the same cells.
 
-**About EMail** (first menu) shows the version and how EMail is connected.
+**About EMail** (first menu) shows the version, how EMail is connected
+and the memory it runs in. EMail loads itself and keeps its data in TT
+RAM (the fast RAM of a TT, or of a Falcon with an accelerator card)
+whenever the machine has some: faster, and more room than ST RAM. The
+About box says "Running in TT RAM", or "Running in ST RAM (TT RAM not
+used)" when the program file's TT RAM flags were switched off, and how
+much of each is free.
 
 ## Writing
 
@@ -344,8 +350,8 @@ the image and mask for icon editors. For EmuTOS,
 - **Falcon mode: "certificate not trusted"**: is CACERT.PEM next to
   EMAIL.PRG, and is the server name right (the certificate must be for
   that name)? **"certificate out of date"**: check the date, time and
-  time zone. **"not enough memory"**: close other programs, put EMail in
-  TT RAM, or use the gateway.
+  time zone. **"not enough memory"**: close other programs, check in
+  the About box that EMail runs in TT RAM, or use the gateway.
 - **"login failed"**: check user and password; Gmail, iCloud and Yahoo
   need an app password.
 - **Options > Protocol log** writes the conversation with the servers to

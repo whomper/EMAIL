@@ -5,6 +5,8 @@
 An e-mail program for the Atari ST, STE, TT and Falcon, written in C for
 GEM.
 
+![EMail on a Falcon: folders, the inbox and a message with its quoted reply in colour](docs/screenshot.png)
+
 **Highlights**
 
 - **IMAP and POP3 in, SMTP out**, with an Outbox for sending later and
@@ -58,6 +60,8 @@ GEM.
 - Separate server settings for the gateway and for Falcon mode, so
   switching between them keeps both
 - EMAIL.INF in capitals, each setting with a note above it
+
+![Settings: a sidebar of parts, here Connection with the time zone by name](docs/settings.png)
 
 Mail providers want encrypted connections. EMail reaches them one of two
 ways, switched with Options > Falcon mode:
@@ -188,6 +192,7 @@ needs `stunnel4`.
 make -C tools/fakesting
 tests/hatari/net_test.py /tmp/mail-net etos512us.img   # Falcon, real servers
 tests/hatari/ui_tour.py WORKDIR etos512us.img          # screenshots of the interface
+tests/hatari/screenshots.py WORKDIR etos512us.img      # the pictures in docs/, English sample mail
 tests/hatari/falcon_test.py /tmp/mail-tls etos512us.img --dsp emu   # Falcon mode, TLS + DSP
 ```
 

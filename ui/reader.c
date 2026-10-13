@@ -23,6 +23,7 @@ typedef struct {
 	const char *s;
 	long n;
 	short kind, attach, label, rtl;
+	short quote;		/* body: the quote depth of the line it is part of */
 } LINE;
 
 static char *head;		/* header lines, \n separated */
@@ -71,6 +72,17 @@ static void add_line(const char *s, long n, short kind, short attach, short labe
 	l->attach = attach;
 	l->label = label;
 	l->rtl = kind == L_BODY ? line_rtl(s, n) : 0;
+	l->quote = 0;
+}
+
+/* how deep a line is quoted: the '>' at its start, spaces between them */
+static short quote_depth(const char *s, long n)
+{
+	short d = 0;
+	long k;
+	for (k = 0; k < n && (s[k] == '>' || s[k] == ' '); k++)
+		d += s[k] == '>';
+	return d;
 }
 
 /* lay the message out for the current window width */
@@ -109,11 +121,19 @@ static void layout(void)
 		add_line(cur_msg->parts[i].name, strlen(cur_msg->parts[i].name), L_ATTACH, (short)i, 0);
 	add_line("", 0, L_RULE, 0, 0);
 	nb = wrap_text(body, bodylen, width, br, max - nlines - 2);
-	for (i = 0; i < nb; i++) {
-		long s = br[i], end = i + 1 < nb ? br[i + 1] : bodylen;
-		while (end > s && (body[end - 1] == '\n' || body[end - 1] == ' '))
-			end--;
-		add_line(body + s, end - s, L_BODY, 0, 0);
+	{
+		short depth = 0;
+		for (i = 0; i < nb; i++) {
+			long s = br[i], end = i + 1 < nb ? br[i + 1] : bodylen;
+			/* a line of the text starts here, or this is the rest of
+			   one wrapped: it keeps the depth (and colour) of its start */
+			if (s == 0 || body[s - 1] == '\n')
+				depth = quote_depth(body + s, (i + 1 < nb ? br[i + 1] : bodylen) - s);
+			while (end > s && (body[end - 1] == '\n' || body[end - 1] == ' '))
+				end--;
+			add_line(body + s, end - s, L_BODY, 0, 0);
+			lines[nlines - 1].quote = depth;
+		}
 	}
 	free(br);
 	w_reader.total = nlines;
@@ -330,15 +350,13 @@ static void draw(WIN *w, GRECT *clip)
 			hline(w->work.x, w->work.x + w->work.w - 1, y + ch / 2);
 			break;
 		default:
-			if (colour && l->n && l->s[0] == '>') {
-				/* quoted text by depth: blue, green, brown, as in Thunderbird */
-				short d = 0, k;
-				for (k = 0; k < l->n && (l->s[k] == '>' || l->s[k] == ' '); k++)
-					d += l->s[k] == '>';
+			if (colour && l->quote) {
+				/* quoted text by depth: blue, green, brown, as in
+				   Thunderbird; a wrapped line's rest as its start */
+				short d = l->quote;
 				text_pen_at(pen[d == 1 ? P_Q1 : d == 2 ? P_Q2 : P_Q3], x0, y, l->s, l->n, cols, TX_RIGHT);
 			} else {
-				text_at(x0, y, l->s, l->n, cols,
-					TX_RIGHT | ((l->n && l->s[0] == '>') ? TX_LIGHT : 0));
+				text_at(x0, y, l->s, l->n, cols, TX_RIGHT | (l->quote ? TX_LIGHT : 0));
 			}
 		}
 	}

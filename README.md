@@ -73,7 +73,7 @@ on:             Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) --STinG/MiNTnet--TLS
 - **On**, on a Falcon or TT with 4 MB or more (TT RAM helps): EMail does TLS 1.2 itself
   with [BearSSL](https://bearssl.org/) (third_party/bearssl), built for
   the 68030, and the Falcon's DSP56001 checks the servers' RSA
-  signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in this repository)
+  signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in `binary/`)
   next to EMAIL.PRG. See [Falcon mode](docs/GUIDE.md#falcon-mode).
 
 EMail follows the design of Troll, the GFA-BASIC newsreader and mail
@@ -112,6 +112,10 @@ the 16 MHz ones in cycle-exact emulation; details in
 
 ## Getting started
 
+Everything to copy to the Atari is in [`binary/`](binary): `EMAIL.PRG`,
+`CACERT.PEM` and `ROOTS.DAT` (Falcon mode), and the desktop icon in
+`binary/icons/`.
+
 1. Copy `EMAIL.PRG` into a folder of its own on your Atari, e.g. `C:\EMAIL\`.
 2. Set up the gateway on a Raspberry Pi: `sudo gateway/install.sh
    imap.gmail.com smtp.gmail.com` (see [gateway/README.md](gateway/README.md)).
@@ -128,7 +132,7 @@ The [user guide](docs/GUIDE.md) describes everything else.
 
 ```
 sudo apt install gcc-m68k-linux-gnu      # Debian/Ubuntu
-make                                     # writes EMAIL.PRG and ROOTS.DAT
+make                                     # writes binary/EMAIL.PRG and binary/ROOTS.DAT
 ```
 
 Every build of EMAIL.PRG gets the next version: the Makefile counts up the
@@ -157,7 +161,8 @@ ui/      the GEM program: windows, drawing, editor, dialogs, menus
 gateway/ the Raspberry Pi gateway (stunnel)
 tests/   unit and integration tests, the Hatari test rig
 tools/   elf2tos.py, the icon generator, FAKESTNG.PRG (for testing in Hatari only)
-icons/   EMail's desktop icon (RSC and ICN files)
+binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT,
+         and the desktop icon (icons/, RSC and ICN files)
 ```
 
 ## Tests

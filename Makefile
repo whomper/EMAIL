@@ -43,9 +43,9 @@ OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o \
            $(addprefix $(OBJDIR)/,$(addsuffix .o,$(CORE) $(ATARI) $(UI)))
 HDRS    := $(wildcard src/*.h atari/*.h atari/include/*.h ui/*.h dsp/*.h)
 
-all: EMAIL.PRG ROOTS.DAT
+all: binary/EMAIL.PRG binary/ROOTS.DAT
 
-EMAIL.PRG: $(OBJDIR)/mail.elf tools/elf2tos.py
+binary/EMAIL.PRG: $(OBJDIR)/mail.elf tools/elf2tos.py
 	PRGFLAGS=7 python3 tools/elf2tos.py $< $@
 
 # Every build of EMAIL.PRG gets the next version: the minor number in
@@ -108,8 +108,8 @@ $(OBJDIR)/unit: tests/unit.c $(HOSTSRC) $(HDRS) $(HOSTLIB) | $(OBJDIR)
 $(OBJDIR)/mkroots: tools/mkroots.c $(HOSTSRC) $(HDRS) $(HOSTLIB) | $(OBJDIR)
 	$(HOSTCC) $(HOSTCFLAGS) -I$(BSSL)/inc -o $@ tools/mkroots.c $(HOSTSRC) $(HOSTLIB)
 
-ROOTS.DAT: CACERT.PEM $(OBJDIR)/mkroots
-	$(OBJDIR)/mkroots CACERT.PEM $@
+binary/ROOTS.DAT: binary/CACERT.PEM $(OBJDIR)/mkroots
+	$(OBJDIR)/mkroots binary/CACERT.PEM $@
 
 test: $(OBJDIR)/unit
 	$(OBJDIR)/unit
@@ -118,6 +118,6 @@ itest: $(OBJDIR)/mail-cli
 	tests/integration.sh
 
 clean:
-	rm -rf $(OBJDIR) EMAIL.PRG ROOTS.DAT
+	rm -rf $(OBJDIR) binary/EMAIL.PRG binary/ROOTS.DAT
 
 .PHONY: all test itest clean

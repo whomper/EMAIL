@@ -229,12 +229,12 @@ static void t_tls(void)
 	int n;
 	snprintf(tls_roots_cache, sizeof(tls_roots_cache), "/tmp/mail-unit-roots.%d", (int)getpid());
 	remove(tls_roots_cache);
-	n = tls_load_anchors("CACERT.PEM", err, sizeof(err));
-	CHECK(n == 121, "CACERT.PEM: %d roots (%s)", n, n ? "" : err);
-	CHECK(tls_load_anchors("CACERT.PEM", err, sizeof(err)) == n, "anchors loaded once");
+	n = tls_load_anchors("binary/CACERT.PEM", err, sizeof(err));
+	CHECK(n == 121, "binary/CACERT.PEM: %d roots (%s)", n, n ? "" : err);
+	CHECK(tls_load_anchors("binary/CACERT.PEM", err, sizeof(err)) == n, "anchors loaded once");
 	CHECK(pf_size(tls_roots_cache) > 1000, "decoded roots cached");
 	tls_free_anchors();
-	n = tls_load_anchors("CACERT.PEM", err, sizeof(err));
+	n = tls_load_anchors("binary/CACERT.PEM", err, sizeof(err));
 	CHECK(n == 121, "roots read back from the cache: %d", n);
 	remove(tls_roots_cache);
 }

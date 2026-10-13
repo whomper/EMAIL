@@ -77,10 +77,10 @@ smtp = subprocess.Popen([sys.executable, os.path.join(ROOT, "tests", "smtp_serve
 
 # drive C:
 os.makedirs(os.path.join(hd, "AUTO"))
-shutil.copy(os.path.join(ROOT, "EMAIL.PRG"), hd)
+shutil.copy(os.path.join(ROOT, "binary", "EMAIL.PRG"), hd)
 # the full Mozilla list EMail ships, plus the test certificate
 with open(os.path.join(hd, "CACERT.PEM"), "wb") as f:
-    f.write(open(os.path.join(ROOT, "CACERT.PEM"), "rb").read() + open(cert, "rb").read())
+    f.write(open(os.path.join(ROOT, "binary", "CACERT.PEM"), "rb").read() + open(cert, "rb").read())
 shutil.copy(os.path.join(ROOT, "tools", "fakesting", "FAKESTNG.PRG"), os.path.join(hd, "AUTO"))
 if reuse:
     shutil.copy(os.path.join(keep, "ROOTS.DAT"), hd)

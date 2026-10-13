@@ -31,6 +31,23 @@ static short aes(short op, short nin, short nout, short nain, short naout)
 short appl_init(void) { return aes(10, 0, 1, 0, 0); }
 short appl_exit(void) { return aes(19, 0, 1, 0, 0); }
 
+/* another application's id by its 8-character name ("ST-GUIDE"), -1 if
+   it isn't running */
+short appl_find(const char *name)
+{
+	addrin[0] = (void *)name;
+	return aes(13, 0, 1, 1, 0);
+}
+
+/* a message of len bytes to application id */
+short appl_write(short id, short len, void *msg)
+{
+	aintin[0] = id;
+	aintin[1] = len;
+	addrin[0] = msg;
+	return aes(12, 2, 1, 1, 0);
+}
+
 short graf_handle(short *wchar, short *hchar, short *wbox, short *hbox)
 {
 	short r = aes(77, 0, 5, 0, 0);

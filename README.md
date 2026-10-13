@@ -117,8 +117,8 @@ the 16 MHz ones in cycle-exact emulation; details in
 ## Getting started
 
 Everything to copy to the Atari is in [`binary/`](binary): `EMAIL.PRG`,
-`CACERT.PEM` and `ROOTS.DAT` (Falcon mode), and the desktop icon in
-`binary/icons/`.
+`CACERT.PEM` and `ROOTS.DAT` (Falcon mode), `EMAIL.HYP` (the user guide for
+ST-Guide, opened by the Help key), and the desktop icon in `binary/icons/`.
 
 1. Copy `EMAIL.PRG` into a folder of its own on your Atari, e.g. `C:\EMAIL\`.
 2. Set up the gateway on a Raspberry Pi: `sudo gateway/install.sh
@@ -144,6 +144,11 @@ minor number in `VERSION` (major.minor, e.g. 1.6) each time it links the
 program; it shows in the About box and the User-Agent header. Commit
 `VERSION` together with the program.
 
+The ST-Guide help file `binary/EMAIL.HYP` is made from `docs/GUIDE.md`
+by `tools/mkhelp.py` and the HCP compiler from the
+[hypview](https://github.com/th-otto/hypview) project:
+`make help HCP=/path/to/hcp`.
+
 No MiNTLib is needed: the program is freestanding (`atari/`) and
 `tools/elf2tos.py` writes the TOS executable. It is built for the 68000,
 so it runs on every Atari from the ST to the Falcon; only BearSSL, used in
@@ -165,7 +170,7 @@ ui/      the GEM program: windows, drawing, editor, dialogs, menus
 gateway/ the Raspberry Pi gateway (stunnel)
 tests/   unit and integration tests, the Hatari test rig
 tools/   elf2tos.py, the icon generator, FAKESTNG.PRG (for testing in Hatari only)
-binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT,
+binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT, EMAIL.HYP,
          and the desktop icon (icons/, RSC and ICN files)
 ```
 

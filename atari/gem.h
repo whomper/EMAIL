@@ -111,6 +111,8 @@ typedef struct {
 } EVENT;
 
 short appl_init(void);
+short appl_find(const char *name);
+short appl_write(short id, short len, void *msg);
 short appl_exit(void);
 short graf_handle(short *wchar, short *hchar, short *wbox, short *hbox);
 short graf_mouse(short num, void *form);

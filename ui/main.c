@@ -26,6 +26,40 @@ void list_init(void);
 void reader_init(void);
 void editor_init(void);
 
+/* ---------------- help ---------------- */
+
+/* the user guide in ST-Guide, when it runs and EMAIL.HYP is next to
+   EMAIL.PRG: a VA_START with the file's path, which ST-Guide opens at its
+   main page. The path goes in memory other programs may read (MiNT's
+   memory protection). 0 when it can't, and the Help key shows the keys */
+static int open_help(void)
+{
+	static char *path;
+	short id = appl_find("ST-GUIDE"), msg[8];
+	if (id < 0)
+		return 0;
+	if (!path) {
+		path = Mxalloc(220, 0x22);	/* global, ST or TT RAM */
+		if ((long)path == -32 || (long)path <= 0)
+			path = Malloc(220);	/* TOS 1.x: no memory protection */
+		if ((long)path <= 0) {
+			path = 0;
+			return 0;
+		}
+	}
+	path_join(path, 220, opt.workdir, "EMAIL.HYP");
+	if (!pf_exists(path))
+		return 0;
+	msg[0] = 0x4711;		/* VA_START */
+	msg[1] = ap_id;
+	msg[2] = 0;
+	msg[3] = (short)((unsigned long)path >> 16);
+	msg[4] = (short)((unsigned long)path & 0xffff);
+	msg[5] = msg[6] = msg[7] = 0;
+	appl_write(id, 16, msg);
+	return 1;
+}
+
 /* ---------------- menu ---------------- */
 
 
@@ -872,7 +906,8 @@ static int shortcut(short kstate, short key)
 		return 1;
 	}
 	if (scan == 0x62) {		/* Help */
-		dlg_keys();
+		if (!open_help())
+			dlg_keys();
 		return 1;
 	}
 	if (kstate & K_CTRL) {

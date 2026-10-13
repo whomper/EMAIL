@@ -34,10 +34,15 @@ C:\EMAIL\ADDRESS.TXT   address book
 C:\EMAIL\EMAIL.LOG      protocol log, when switched on
 C:\EMAIL\CACERT.PEM    root certificates, for Falcon mode only
 C:\EMAIL\ROOTS.DAT     the same, decoded ahead of time (Falcon mode only)
+C:\EMAIL\EMAIL.HYP     this guide for ST-Guide (the Help key opens it)
 C:\EMAIL\EMAIL\         your mail: one folder per account, one per mailbox
 ```
 
 Start it. The first time, EMail asks for your account.
+
+This guide is also in `EMAIL.HYP`, for ST-Guide: with ST-Guide installed
+(as an accessory or under MultiTOS/MagiC) and `EMAIL.HYP` next to
+`EMAIL.PRG`, the Help key opens it. Without ST-Guide, Help shows the keys.
 
 ## Setting up an account
 
@@ -141,7 +146,8 @@ like a modern mail program:
   many messages are loaded and how many there are.
 - **Message** (bottom right): the selected message. Click an attachment
   line (`»`) to save it with the file selector. HTML-only mail is shown
-  as text. Quoted lines are drawn light.
+  as text. Quoted lines are coloured by how deep they are quoted (light
+  grey in black and white).
 
 **Drag the dividers** between the panes to size them; the pointer turns
 into a hand over a divider. Drag the box in the bottom right corner to
@@ -262,7 +268,7 @@ so those are left out when showing a message.
 | Ctrl+G       | flag / unflag              | Ctrl+M       | move to a folder        |
 | Delete       | delete (to Trash)          | Ctrl+S       | send (in the editor)    |
 | Ctrl+T       | attach a file              | Ctrl+B       | address book            |
-| F10          | Hebrew keyboard on/off     | Help         | these keys              |
+| F10          | Hebrew keyboard on/off     | Help         | this guide (or the keys) |
 | Esc          | close the editor           | Ctrl+Q       | quit                    |
 | Tab          | next pane                  | Right button | what you can do there   |
 | Ctrl+A       | select all messages        | Shift+click  | add/remove one message  |

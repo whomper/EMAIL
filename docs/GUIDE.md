@@ -35,16 +35,17 @@ C:\EMAIL\EMAIL.LOG      protocol log, when switched on
 C:\EMAIL\CRASH.LOG      what happened, if EMail ever crashes
 C:\EMAIL\CACERT.PEM    root certificates, for Falcon mode only
 C:\EMAIL\ROOTS.DAT     the same, decoded ahead of time (Falcon mode only)
-C:\EMAIL\EMAIL.HYP     this guide for ST-Guide (the Help key opens it)
+C:\EMAIL\EMAIL.HYP     this guide, for EHypView or ST-Guide (the Help key opens it)
 C:\EMAIL\EMAIL.REF     its page names, for ST-Guide's reference list (optional)
 C:\EMAIL\EMAIL\         your mail: one folder per account, one per mailbox
 ```
 
 Start it. The first time, EMail asks for your account.
 
-This guide is also in `EMAIL.HYP`, for ST-Guide: with ST-Guide installed
-(as an accessory or under MultiTOS/MagiC) and `EMAIL.HYP` next to
-`EMAIL.PRG`, the Help key opens it. Without ST-Guide, Help shows the keys.
+This guide is also in `EMAIL.HYP`, a hypertext: with EHypView, ST-Guide
+or HypView running (as an accessory, or as a program under MultiTOS or
+MagiC), the Help key opens it, from next to `EMAIL.PRG` or from the
+viewer's own help folder. Without a viewer, Help shows the keys.
 
 ## Setting up an account
 

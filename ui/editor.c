@@ -135,6 +135,7 @@ void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
 		ln = calloc(MAXLINES, sizeof(ELINE));
 	if (!ln) {
 		free(text);
+		alert(1, "[1][Not enough memory to|start this message.][ OK ]");
 		return;
 	}
 	e_acct = a;

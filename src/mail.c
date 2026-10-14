@@ -1057,7 +1057,8 @@ int mail_queue(ACCOUNT *a, const char *raw, long len)
 	h = fold_add(f, f->uidnext);
 	if (!h || msg_save(f, f->uidnext, raw, len) < 0) {
 		fold_close(f);
-		str_copy(mail_err, "Can't write to the Outbox (disk full?)", sizeof(mail_err));
+		str_copy(mail_err, h ? "Can't write to the Outbox (disk full?)"
+				     : "Not enough memory to queue the message", sizeof(mail_err));
 		return 0;
 	}
 	hdr_from_raw(h, raw, len);

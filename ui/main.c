@@ -1003,6 +1003,17 @@ int main(void)
 		extern int mem_unaligned_ok;
 		mem_unaligned_ok = get_cookie(0x5F435055L) >= 20;	/* _CPU */
 	}
+	{
+		/* under 2 MB free: small receive buffers, so the editor and an
+		   open message still fit beside a connection */
+		long st = (long)Mxalloc(-1L, 0), tt = (long)Mxalloc(-1L, 1);
+		if (st == -32) {		/* TOS 1.x: no Mxalloc, no TT RAM */
+			st = (long)Malloc(-1L);
+			tt = 0;
+		}
+		if ((st > 0 ? st : 0) + (tt > 0 ? tt : 0) < 2048L * 1024)
+			conn_bufsize = 4096;
+	}
 	ap_id = appl_init();
 	if (ap_id < 0)
 		return 1;

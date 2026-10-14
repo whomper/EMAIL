@@ -184,6 +184,8 @@ void conn_log(const char *who, const char *dir, const char *text, long n)
 		conn_log_flush();
 }
 
+long conn_bufsize = 16384;
+
 static CONN *open_plain(const char *name, const char *host, unsigned short port, char *err, int errlen)
 {
 	CONN *c;
@@ -197,6 +199,10 @@ static CONN *open_plain(const char *name, const char *host, unsigned short port,
 		return 0;
 	}
 	c = calloc(1, sizeof(CONN));
+	if (c && !(c->buf = malloc(c->size = conn_bufsize))) {
+		free(c);
+		c = 0;
+	}
 	if (!c) {
 		net_close(h);
 		str_copy(err, "out of memory", errlen);
@@ -233,6 +239,7 @@ void conn_close(CONN *c)
 	if (c->tls)
 		tls_close(c->tls);
 	net_close(c->h);
+	free(c->buf);
 	free(c);
 }
 
@@ -314,8 +321,8 @@ static int fill(CONN *c)
 		return 1;
 	c->pos = c->len = 0;
 	for (;;) {
-		long r = c->tls ? tls_read(c->tls, c->buf, sizeof(c->buf))
-				: net_read(c->h, c->buf, sizeof(c->buf));
+		long r = c->tls ? tls_read(c->tls, c->buf, c->size)
+				: net_read(c->h, c->buf, c->size);
 		if (r > 0) {
 			c->len = r;
 			conn_bytes += r;

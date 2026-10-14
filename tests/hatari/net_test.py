@@ -72,7 +72,7 @@ bridge = subprocess.Popen([sys.executable, os.path.join(HERE, "serial_bridge.py"
                           stderr=open(os.path.join(work, "bridge.log"), "w"))
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in))
+r = rig.Rig(work, tos, serial=(fifo_out, fifo_in), extra=("--memsize", "4"))
 ok = False
 try:
     time.sleep(40)                       # boot, log in, mirror the inbox

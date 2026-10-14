@@ -17,8 +17,8 @@
 typedef struct {
 	int h;
 	void *tls;			/* TLS *, when encrypted */
-	char buf[16384];	/* a TLS record or a good STinG gulp at a time */
-	long pos, len;
+	char *buf;		/* a TLS record or a good STinG gulp at a time */
+	long size, pos, len;
 	long timeout_ms;
 	int dead;		/* known to be gone: close without a goodbye */
 	char err[160];
@@ -34,6 +34,9 @@ CONN *conn_open(const char *name, const char *host, unsigned short port, int sec
    server wanted an ECDSA certificate; the next try accepts it) */
 int   conn_starttls(CONN *c, const char *host, char *err, int errlen);
 extern int conn_tls_retry;
+/* the receive buffer of each connection: 16 KB, 4 KB on a small Atari,
+   whose memory the editor and the open message need more */
+extern long conn_bufsize;
 /* the root certificates (CACERT.PEM), loaded at the first TLS connection */
 extern char conn_cacert[200];
 /* "TLS 1.2, ECDHE-RSA, ChaCha20-Poly1305", or "" when not encrypted */

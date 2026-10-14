@@ -16,6 +16,7 @@
 #include "../src/plat.h"
 #include "util.h"
 #include "crash.h"
+#include "../src/version.h"
 
 short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes;
 short gl_wchar, gl_hchar;
@@ -902,14 +903,6 @@ int falcon_mode_set(int on)
 
 /* ---------------- events ---------------- */
 
-#ifdef CRASH_TEST
-static void crash_test_sup(void)
-{
-	volatile long *p = (volatile long *)0xFFFFFA40L;	/* no TT MFP here */
-	(void)*p;
-}
-#endif
-
 static int shortcut(short kstate, short key)
 {
 	short scan = KEY_SCAN(key);
@@ -918,27 +911,8 @@ static int shortcut(short kstate, short key)
 		set_hebrew_kbd(!hebrew_kbd);
 		return 1;
 	}
-#ifdef CRASH_TEST
-	/* test builds only: F1-F4 crash on purpose */
-	if (scan >= 0x3b && scan <= 0x3e) {
-		static volatile long *volatile bad;
-		static void (*volatile ill)(void);
-		static const unsigned short illegal[] = { 0x4afc };
-		if (scan == 0x3b) {		/* bus error in EMail */
-			bad = (long *)0x10L;
-			*bad = 0;
-		} else if (scan == 0x3c) {	/* bus error in supervisor mode */
-			Supexec(crash_test_sup);
-		} else if (scan == 0x3d) {	/* illegal instruction */
-			ill = (void (*)(void))illegal;
-			ill();
-		} else {			/* address error (68000) */
-			bad = (long *)0x20001L;
-			*bad = 0;
-		}
+	if (crash_test(scan))	/* test builds only: F1-F4 crash on purpose */
 		return 1;
-	}
-#endif
 	if (scan == 0x62) {		/* Help */
 		if (!open_help())
 			dlg_keys();
@@ -1086,8 +1060,9 @@ int main(void)
 
 	work_dir(dir, sizeof(dir));
 	store_init(dir);
-	crash_install(dir);
+	crash_install(dir, "EMail", mail_version);
 	crash_cleanup = crash_quit;
+	crash_report = conn_log_append;	/* the report in the protocol log too */
 	if (store_plain_passwords && !store_lost_passwords)
 		store_save_settings();		/* encrypt them right away */
 	falcon_dsp_init();

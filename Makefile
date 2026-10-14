@@ -90,7 +90,7 @@ $(OBJDIR)/crt0.o: common/atari/crt0.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/sting_s.o: common/atari/sting.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
-$(OBJDIR)/crash_s.o: atari/crash.S | $(OBJDIR)
+$(OBJDIR)/crash_s.o: common/atari/crash.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/nf.o: common/atari/nf.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<

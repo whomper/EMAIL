@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 """End-to-end test of EMAIL.PRG on an emulated Falcon with real servers.
 
 Dovecot (IMAP) and tests/smtp_server.py run on this computer; Hatari has

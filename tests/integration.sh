@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # Integration test of EMail's mail core against a real IMAP/POP3 server
 # (Dovecot) and an SMTP server, all on localhost. Needs dovecot-imapd and
 # dovecot-pop3d installed; run with `make itest`.

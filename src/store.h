@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * store.h - EMail's data on disk: settings and accounts (EMAIL.INF),
  * the folder list of each account, and per folder a header index plus

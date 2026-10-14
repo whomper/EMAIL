@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * mail.h - what the user can do, independent of the GEM interface:
  * check mail, mirror IMAP folders, read, flag, delete, move, send.

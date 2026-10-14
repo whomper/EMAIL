@@ -1,3 +1,5 @@
+; SPDX-License-Identifier: GPL-2.0-or-later
+; Copyright (C) 2026 Erez Yaary
 ; Montgomery multiplication on the Falcon's DSP56001 (CIOS, 23-bit digits).
 ; The host sends n, mp (= -m^-1 mod 2^23), K, then a[n], b[n], m[n];
 ; the DSP computes t = a*b/R mod m (R = 2^(23n), result < 2m) K times and

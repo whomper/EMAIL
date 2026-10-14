@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * mail_cli.c - drives EMail's mail core from a terminal, for the
  * integration tests (tests/integration.sh). Not part of the Atari

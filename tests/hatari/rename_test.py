@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 """Renaming a folder, on an emulated Falcon.
 
 Like select_test.py: EMail selects the folder Apple, opens Folder > Rename

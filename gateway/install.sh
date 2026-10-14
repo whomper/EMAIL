@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # Set up a Raspberry Pi (or any Debian/Ubuntu/Raspberry Pi OS computer)
 # as EMail's secure-mail gateway: the Atari talks plain IMAP, POP3 and
 # SMTP to the Pi on your home network, and the Pi talks TLS to your mail

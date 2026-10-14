@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * dialogs.c - EMail's dialogs, built in code (no .RSC file needed):
  * account setup, settings, a one-line question, list pickers, alerts.

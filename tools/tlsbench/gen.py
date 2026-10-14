@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # test vectors and the DSP program for TLSDSP.PRG
 import random, sys
 random.seed(1)

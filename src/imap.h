@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * imap.h - IMAP4rev1 client (RFC 3501) with the extensions a modern
  * server offers and the GFA Troll uses: UIDPLUS, MOVE, SPECIAL-USE, NAMESPACE.

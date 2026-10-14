@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * draw.c - text output for EMail's windows. Text is kept in logical
  * order; lines containing Hebrew go through bidi_visual() and, when the

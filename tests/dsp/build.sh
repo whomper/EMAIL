@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # builds DSPTEST.PRG (run `make` in the top directory first)
 set -e
 H=$(cd "$(dirname "$0")" && pwd)

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * TLSDSP - how fast the Falcon's DSP56001 does the big-number arithmetic
  * of a TLS handshake: Montgomery multiplication of 2048-bit numbers (RSA)

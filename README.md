@@ -207,3 +207,21 @@ test checks the reply and its copy in Sent on the server. Hatari has no
 network card, so `FAKESTNG.PRG` stands in for STinG and carries EMail's
 connections over the emulated serial port to `serial_bridge.py`. It's
 for the emulator only; never install it on a real Atari.
+
+## Licence
+
+EMail is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 2 of the License, or (at your option)
+any later version. It is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [COPYING](COPYING).
+
+Copyright (C) 2026 Erez Yaary.
+
+It includes, under their own licences (compatible with the GPL):
+
+- [BearSSL](third_party/bearssl) by Thomas Pornin: MIT licence
+  ([LICENSE.txt](third_party/bearssl/LICENSE.txt))
+- `CACERT.PEM`, the root certificates for Falcon mode, from Mozilla's CA
+  list (Mozilla Public License 2.0)

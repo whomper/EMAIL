@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # Builds the TLS measurements for the Falcon:
 #   TLSB030.PRG  BearSSL 0.6 on the 68030: each piece of a TLS handshake
 #   TLSDSP.PRG   Montgomery multiplication on the DSP56001 (2048 and 256 bits)

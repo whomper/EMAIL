@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * pop3.h - POP3 client (RFC 1939) with UIDL, for accounts that download
  * mail into local folders.

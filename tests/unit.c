@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * unit.c - checks of the mail core that need no server: charsets
  * (Hebrew included), MIME decoding, message building, bidi, dates.

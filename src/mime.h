@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * mime.h - reading internet messages: headers, MIME structure, the
  * readable text (plain text preferred, HTML turned into text) and the

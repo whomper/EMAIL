@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 # EMail - an email client for the Atari ST/STE/TT/Falcon, in C.
 #
 #   make            builds EMAIL.PRG with a stock m68k ELF cross compiler

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * main.c - EMail: start-up, the menu bar, the event loop and the
  * commands behind menus and keys.

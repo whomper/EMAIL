@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 Erez Yaary */
 /*
  * about.c - the About box, drawn like Claude ST's (whomper/atari_claude):
  * the icon, large, in colour when the screen has 16 colours or more, the
@@ -173,7 +175,7 @@ void dlg_about(void)
 	dw = 50 * cw;
 	if (dw > desk_w - 2 * cw)
 		dw = desk_w - 2 * cw;
-	dh = lh + ih + lh / 2 + lh + (lh + lh / 2) + (lh + lh / 2) + lh / 4 + lh +
+	dh = lh + ih + lh / 2 + lh + (lh + lh / 2) + (lh + lh / 2) + lh / 4 + lh + lh +
 	     (lh + lh / 2) + lh + (lh + lh / 2) + lh / 2 + bh + lh;
 	if (dh > desk_h - 4)
 		dh = desk_h - 4;
@@ -223,6 +225,8 @@ void dlg_about(void)
 	center(y, "Created by Erez Yaary", TX_BOLD);
 	y += lh;
 	center(y, "\xBD 2026 Erez Yaary", 0);
+	y += lh;
+	center(y, "Free software under the GNU GPL 2 or later", 0);
 	y += lh + lh / 2;
 	center(y, conn, 0);
 	y += lh;

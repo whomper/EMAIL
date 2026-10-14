@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Erez Yaary
 """The screenshots in docs/, on an emulated Falcon in 16 colours.
 
 An inbox of everyday English mail (the Hebrew test messages stay with the

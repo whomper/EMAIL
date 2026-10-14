@@ -304,7 +304,7 @@ static IMAP *login_once(const char *host, unsigned short port, int sec, const ch
 	}
 	sb_init(&im->resp);
 	im->delim = '/';
-	im->c = conn_open("IMAP", host, port, sec, err, errlen);
+	im->c = conn_open("IMAP", host, port, 0, sec, err, errlen);
 	if (!im->c) {
 		free(im);
 		return 0;

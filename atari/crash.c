@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "tos.h"
 #include "crash.h"
-#include "../src/conn.h"
+#include "conn.h"
 #include "../src/version.h"
 
 /* shared with crash.S */

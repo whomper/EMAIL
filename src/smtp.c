@@ -65,7 +65,7 @@ static SMTP *open_once(const char *host, unsigned short port, int sec, const cha
 		return 0;
 	}
 	sb_init(&s->line);
-	s->c = conn_open("SMTP", host, port, sec, err, errlen);
+	s->c = conn_open("SMTP", host, port, 0, sec, err, errlen);
 	if (!s->c) {
 		free(s);
 		return 0;

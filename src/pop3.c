@@ -31,7 +31,7 @@ static POP3 *login_once(const char *host, unsigned short port, int sec, const ch
 		return 0;
 	}
 	sb_init(&p->line);
-	p->c = conn_open("POP3", host, port, sec, err, errlen);
+	p->c = conn_open("POP3", host, port, 0, sec, err, errlen);
 	if (!p->c) {
 		free(p);
 		return 0;

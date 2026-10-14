@@ -35,6 +35,7 @@ struct WIN {
 	void (*closed)(WIN *w);
 	void (*resized)(WIN *w);
 	void (*scrolled)(WIN *w);
+	short iconified;		/* a window of its own shown as EMail's icon (WM_ICONIFY) */
 };
 
 /* screen and font */
@@ -59,6 +60,7 @@ void win_ensure_visible(WIN *w, long line);
 long win_rows(WIN *w);				/* whole lines that fit */
 void win_message(short *msg);			/* WM_* handling */
 WIN *win_topmost(void);
+int win_icon_on_top(void);		/* the top window is iconified */
 int  win_mouse(short mx, short my, short button, short clicks, short kstate);
 void win_hover(short mx, short my);
 void win_focus(WIN *w);
@@ -66,6 +68,8 @@ void win_relayout(void);			/* after a font change */
 void win_redraw_all(void);
 void win_redraw_area(GRECT *area);	/* now, under a dialog that closed */
 extern short main_h;
+extern short main_iconified;		/* shown as the icon */
+void icon_window(short h, GRECT *area);	/* an iconified window: the icon, and unread mail */
 void main_open(void);
 void main_close(void);
 void main_status(const char *s);

@@ -164,6 +164,11 @@ Click a message to read it. Up and Down move through the list; Return
 moves the keyboard to the message. In the message pane Space and
 Backspace page down and up. Closing the main window quits EMail.
 
+Where the AES can iconify windows (MultiTOS, MagiC, XaAES, N.AES), the
+main window and the editor have the iconify button: each shrinks to
+EMail's icon, the main window with the number of unread messages in the
+inboxes under it ("3 new"). Mail is still checked while it is iconified.
+
 **Big folders.** EMail loads a folder 100 messages at a time, newest
 first (Options > Settings changes how many). When there are older ones,
 the last line of the list says **Load 100 more**: click it, or move onto

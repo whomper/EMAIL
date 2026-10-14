@@ -1105,6 +1105,8 @@ int main(void)
 					win_message(msg);
 			}
 		}
+		if ((which & MU_KEYBD) && win_icon_on_top())
+			which &= ~MU_KEYBD;	/* an icon takes no keys */
 		if (which & MU_KEYBD) {
 			WIN *top = win_topmost();
 			if (!shortcut(ev.kstate, ev.kreturn) && top && top->key)

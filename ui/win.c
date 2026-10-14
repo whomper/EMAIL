@@ -15,12 +15,14 @@
 #include "theme.h"
 #include "util.h"
 #include "bidi.h"
+#include "iconify.h"
 
 WIN w_folders, w_list, w_reader, w_editor;
 static WIN *panes[] = { &w_folders, &w_list, &w_reader };
 #define NPANE 3
 
 short main_h = -1;
+short main_iconified;			/* shown as EMail's icon (WM_ICONIFY) */
 static GRECT mwork;			/* the main window's work area */
 static WIN *focus = &w_list;
 static char main_info[120];
@@ -350,6 +352,10 @@ static void main_redraw(GRECT *area)
 	GRECT r, a;
 	if (main_h <= 0)
 		return;
+	if (main_iconified) {	/* the icon, not the panes (area is the old window's) */
+		icon_window(main_h, 0);
+		return;
+	}
 	a = area ? *area : mwork;
 	if (!intersect(&mwork, &a))
 		return;
@@ -379,6 +385,10 @@ void win_redraw(WIN *w, GRECT *area)
 	}
 	if (w->h <= 0 || !w->draw)
 		return;
+	if (w->iconified) {
+		icon_window(w->h, area);
+		return;
+	}
 	a = area ? *area : w->work;
 	if (!intersect(&w->work, &a))
 		return;
@@ -548,7 +558,8 @@ void main_open(void)
 		wd = desk_w;
 		ht = desk_h;
 	}
-	main_h = wind_create(MAINKIND, desk_x, desk_y, desk_w, desk_h);
+	main_h = wind_create(icon_kind(MAINKIND), desk_x, desk_y, desk_w, desk_h);
+	main_iconified = 0;
 	if (main_h < 0) {
 		alert(1, "[3][No more windows available.][ OK ]");
 		return;
@@ -565,20 +576,22 @@ void main_close(void)
 {
 	if (main_h <= 0)
 		return;
-	save_main_place();
+	if (!main_iconified)	/* the place was kept when it was iconified */
+		save_main_place();
 	wind_close(main_h);
 	wind_delete(main_h);
 	main_h = -1;
+	main_iconified = 0;
 }
 
 /* the fonts changed: lay the panes out again */
 void win_relayout(void)
 {
-	if (main_h > 0) {
+	if (main_h > 0 && !main_iconified) {
 		layout();
 		main_redraw(0);
 	}
-	if (w_editor.h > 0) {
+	if (w_editor.h > 0 && !w_editor.iconified) {
 		if (w_editor.resized)
 			w_editor.resized(&w_editor);
 		w_editor.line_h = ch;
@@ -598,7 +611,8 @@ void win_open(WIN *w)
 		return;
 	}
 	w->line_h = ch;
-	w->h = wind_create(EDKIND, desk_x, desk_y, desk_w, desk_h);
+	w->h = wind_create(icon_kind(EDKIND), desk_x, desk_y, desk_w, desk_h);
+	w->iconified = 0;
 	if (w->h < 0) {
 		alert(1, "[3][No more windows available.|Close a window and try again.][ OK ]");
 		return;
@@ -614,7 +628,8 @@ void win_close(WIN *w)
 {
 	if (w->pane || w->h <= 0)
 		return;
-	wind_get(w->h, WF_CURRXYWH, &w->place.x, &w->place.y, &w->place.w, &w->place.h);
+	if (!w->iconified)	/* else the place was kept when it was iconified */
+		wind_get(w->h, WF_CURRXYWH, &w->place.x, &w->place.y, &w->place.w, &w->place.h);
 	if (w == &w_editor) {
 		opt.ed_x = w->place.x;
 		opt.ed_y = w->place.y;
@@ -624,6 +639,7 @@ void win_close(WIN *w)
 	wind_close(w->h);
 	wind_delete(w->h);
 	w->h = -1;
+	w->iconified = 0;
 }
 
 /* keyboard focus to a pane (its header goes dark) */
@@ -656,6 +672,14 @@ WIN *win_topmost(void)
 	if (t == main_h && main_h > 0)
 		return focus;
 	return win_find(t);
+}
+
+/* the top window is shown as an icon: it takes no keys */
+int win_icon_on_top(void)
+{
+	short t, d;
+	wind_get(0, WF_TOP, &t, &d, &d, &d);
+	return t > 0 && ((t == main_h && main_iconified) || (t == w_editor.h && w_editor.iconified));
 }
 
 int win_is_top(WIN *w)
@@ -820,7 +844,7 @@ void win_hover(short mx, short my)
 {
 	short h = wind_find(mx, my), t, d, want = ARROW;
 	wind_get(0, WF_TOP, &t, &d, &d, &d);
-	if (h == main_h && t == main_h) {
+	if (h == main_h && t == main_h && !main_iconified) {
 		GRECT g = grip_rect();
 		/* the flat hand, as over Claude ST's divider */
 		if (inside(&g, mx, my) || on_divider(mx, my, 1) || on_divider(mx, my, 0))
@@ -909,6 +933,8 @@ int win_mouse(short mx, short my, short button, short clicks, short kstate)
 {
 	short h = wind_find(mx, my), i;
 	GRECT r;
+	if (h > 0 && ((h == main_h && main_iconified) || (h == w_editor.h && w_editor.iconified)))
+		return 0;	/* an icon takes no clicks */
 	if (h > 0 && h == main_h) {
 		r = grip_rect();
 		if (inside(&r, mx, my)) {
@@ -964,7 +990,27 @@ static void main_message(short *msg)
 		r.y = msg[5];
 		r.w = msg[6];
 		r.h = msg[7];
-		main_redraw(&r);
+		if (main_iconified)
+			icon_window(main_h, &r);
+		else
+			main_redraw(&r);
+		break;
+	case WM_ICONIFY:
+	case WM_ALLICONIFY:
+		if (main_iconified)
+			break;
+		save_main_place();
+		main_iconified = 1;
+		wind_set(main_h, WF_ICONIFY, msg[4], msg[5], msg[6], msg[7]);
+		break;
+	case WM_UNICONIFY:
+		if (!main_iconified)
+			break;
+		wind_set(main_h, WF_UNICONIFY, msg[4], msg[5], msg[6], msg[7]);
+		main_iconified = 0;
+		get_main_work();
+		layout();
+		main_redraw(0);
 		break;
 	case WM_TOPPED:
 	case WM_NEWTOP: {
@@ -973,7 +1019,7 @@ static void main_message(short *msg)
 		/* the AES tops a window on a click in its contents and keeps
 		   the click: act on it as well, as a modern program does */
 		graf_mkstate(&mx, &my, &mb, &ks);
-		if (msg[0] == WM_TOPPED && inside(&mwork, mx, my))
+		if (msg[0] == WM_TOPPED && !main_iconified && inside(&mwork, mx, my))
 			win_mouse(mx, my, mb ? mb : 1, 1, ks);
 		break;
 	}
@@ -985,6 +1031,8 @@ static void main_message(short *msg)
 		break;
 	case WM_FULLED: {
 		GRECT c, f, p;
+		if (main_iconified)
+			break;
 		wind_get(main_h, WF_CURRXYWH, &c.x, &c.y, &c.w, &c.h);
 		wind_get(main_h, WF_FULLXYWH, &f.x, &f.y, &f.w, &f.h);
 		if (c.x == f.x && c.y == f.y && c.w == f.w && c.h == f.h) {
@@ -1001,6 +1049,10 @@ static void main_message(short *msg)
 	}
 	case WM_SIZED:
 	case WM_MOVED:
+		if (main_iconified) {	/* the icon goes where it is put, as it is */
+			wind_set(main_h, WF_CURRXYWH, msg[4], msg[5], msg[6], msg[7]);
+			break;
+		}
 		if (msg[6] < 40 * cw)
 			msg[6] = 40 * cw;
 		if (msg[7] < 12 * ch)
@@ -1035,12 +1087,32 @@ void win_message(short *msg)
 		r.h = msg[7];
 		win_redraw(w, &r);
 		break;
+	case WM_ICONIFY:
+	case WM_ALLICONIFY:
+		if (w->iconified)
+			break;
+		wind_get(w->h, WF_CURRXYWH, &w->place.x, &w->place.y, &w->place.w, &w->place.h);
+		w->iconified = 1;
+		wind_set(w->h, WF_ICONIFY, msg[4], msg[5], msg[6], msg[7]);
+		break;
+	case WM_UNICONIFY:
+		if (!w->iconified)
+			break;
+		wind_set(w->h, WF_UNICONIFY, msg[4], msg[5], msg[6], msg[7]);
+		w->iconified = 0;
+		wind_get(w->h, WF_WORKXYWH, &w->work.x, &w->work.y, &w->work.w, &w->work.h);
+		if (w->resized)
+			w->resized(w);
+		win_scroll_to(w, w->top);
+		win_sliders(w);
+		win_redraw(w, 0);
+		break;
 	case WM_TOPPED:
 	case WM_NEWTOP: {
 		short mx, my, mb, ks;
 		win_top(w);
 		graf_mkstate(&mx, &my, &mb, &ks);
-		if (msg[0] == WM_TOPPED && w->click && inside(&w->work, mx, my))
+		if (msg[0] == WM_TOPPED && !w->iconified && w->click && inside(&w->work, mx, my))
 			w->click(w, mx, my, 1, ks);
 		menu_update();
 		break;
@@ -1057,6 +1129,8 @@ void win_message(short *msg)
 		break;
 	case WM_FULLED: {
 		GRECT c, f, p;
+		if (w->iconified)
+			break;
 		wind_get(w->h, WF_CURRXYWH, &c.x, &c.y, &c.w, &c.h);
 		wind_get(w->h, WF_FULLXYWH, &f.x, &f.y, &f.w, &f.h);
 		if (c.x == f.x && c.y == f.y && c.w == f.w && c.h == f.h) {
@@ -1075,6 +1149,10 @@ void win_message(short *msg)
 	}
 	case WM_SIZED:
 	case WM_MOVED:
+		if (w->iconified) {
+			wind_set(w->h, WF_CURRXYWH, msg[4], msg[5], msg[6], msg[7]);
+			break;
+		}
 		if (msg[6] < 12 * cw)
 			msg[6] = 12 * cw;
 		if (msg[7] < 6 * ch)

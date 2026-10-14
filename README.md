@@ -75,7 +75,7 @@ on:             Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) --STinG/MiNTnet--TLS
   encryption, see [gateway/README.md](gateway/README.md). A server that
   accepts plain connections can be used directly.
 - **On**, on a Falcon or TT with 4 MB or more (TT RAM helps): EMail does TLS 1.2 itself
-  with [BearSSL](https://bearssl.org/) (third_party/bearssl), built for
+  with [BearSSL](https://bearssl.org/) (common/third_party/bearssl), built for
   the 68030, and the Falcon's DSP56001 checks the servers' RSA
   signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in `binary/`)
   next to EMAIL.PRG. See [Falcon mode](docs/GUIDE.md#falcon-mode).
@@ -150,12 +150,12 @@ by `tools/mkhelp.py` and the HCP compiler from the
 `make help HCP=/path/to/hcp`.
 
 No MiNTLib is needed: the program is freestanding (`atari/`) and
-`tools/elf2tos.py` writes the TOS executable. It is built for the 68000,
+`common/tools/elf2tos.py` writes the TOS executable. It is built for the 68000,
 so it runs on every Atari from the ST to the Falcon; only BearSSL, used in
 Falcon mode, is 68030 code. ROOTS.DAT is CACERT.PEM decoded on the build
-computer by `tools/mkroots.c`, so the Atari doesn't have to.
-The DSP program is `dsp/rsa.a56`; `dsp/mkh.py` assembles it into
-`dsp/rsa_prog.h` (with the `a56` assembler: `cd dsp && a56 rsa.a56 && python3 mkh.py a56.out rsa_prog.h dsp_rsa_prog`).
+computer by `common/tools/mkroots.c`, so the Atari doesn't have to.
+The DSP program is `common/dsp/rsa.a56`; `common/dsp/mkh.py` assembles it into
+`common/dsp/rsa_prog.h` (with the `a56` assembler: `cd common/dsp && a56 rsa.a56 && python3 mkh.py a56.out rsa_prog.h dsp_rsa_prog`).
 
 ## Source
 
@@ -164,12 +164,12 @@ atari/   TOS runtime: start-up, system calls, a small C library, AES/VDI,
          TCP over STinG/STiK or MiNTnet (with a DNS client)
 src/     the mail core: IMAP, POP3, SMTP, MIME, charsets and Hebrew,
          bidi, the local store, composing, mail operations, TLS (tls.c)
-dsp/     the DSP56001 program for RSA (Falcon mode)
-third_party/bearssl/  BearSSL 0.6, unchanged
+common/  code shared with the other AERA programs (from AERA-Atari):
+         BearSSL, the DSP RSA program, bidi, dates, passwords, build tools
 ui/      the GEM program: windows, drawing, editor, dialogs, menus
 gateway/ the Raspberry Pi gateway (stunnel)
 tests/   unit and integration tests, the Hatari test rig
-tools/   elf2tos.py, the icon generator, FAKESTNG.PRG (for testing in Hatari only)
+tools/   the icon generator, sync-common.sh, FAKESTNG.PRG (for testing in Hatari only)
 binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT, EMAIL.HYP,
          and the desktop icon (icons/, RSC and ICN files)
 ```
@@ -221,7 +221,7 @@ Copyright (C) 2026 Erez Yaary.
 
 It includes, under their own licences (compatible with the GPL):
 
-- [BearSSL](third_party/bearssl) by Thomas Pornin: MIT licence
-  ([LICENSE.txt](third_party/bearssl/LICENSE.txt))
+- [BearSSL](common/third_party/bearssl) by Thomas Pornin: MIT licence
+  ([LICENSE.txt](common/third_party/bearssl/LICENSE.txt))
 - `CACERT.PEM`, the root certificates for Falcon mode, from Mozilla's CA
   list (Mozilla Public License 2.0)

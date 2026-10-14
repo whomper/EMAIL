@@ -17,6 +17,7 @@
 #include "util.h"
 #include "crash.h"
 #include "help.h"
+#include "mbar.h"
 #include "../src/version.h"
 
 short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes;
@@ -43,156 +44,76 @@ static int open_help(void)
 /* ---------------- menu ---------------- */
 
 
-typedef struct {
-	const char *text;
-	short cmd;
-} MITEM;
-
-static const MITEM m_desk[] = {
-	{ "  About EMail...    ", C_ABOUT }, { "--------------------", C_SEP },
-	{ "  Desk Accessory 1  ", C_ACC }, { "  Desk Accessory 2  ", C_ACC },
-	{ "  Desk Accessory 3  ", C_ACC }, { "  Desk Accessory 4  ", C_ACC },
-	{ "  Desk Accessory 5  ", C_ACC }, { "  Desk Accessory 6  ", C_ACC }, { 0, 0 }
+/* the menu bar, built by the AERA programs' shared builder
+   (common/ui/mbar.c): titles, items, shortcuts, commands */
+static const MBAR_ITEM m_desk[] = {
+	{ "About EMail...", 0, C_ABOUT },
+	{ 0, 0, 0 }
 };
-static const MITEM m_file[] = {
-	{ "  New message     ^N ", C_NEW }, { "  Check mail      ^K ", C_CHECK },
-	{ "  Send Outbox        ", C_SENDQ }, { "---------------------", C_SEP },
-	{ "  Save attachment... ", C_SAVEATT }, { "---------------------", C_SEP },
-	{ "  Quit            ^Q ", C_QUIT }, { 0, 0 }
+static const MBAR_ITEM m_file[] = {
+	{ "New message", "^N", C_NEW },
+	{ "Check mail", "^K", C_CHECK },
+	{ "Send Outbox", 0, C_SENDQ },
+	{ "-", 0, 0 },
+	{ "Save attachment...", 0, C_SAVEATT },
+	{ "-", 0, 0 },
+	{ "Quit", "^Q", C_QUIT },
+	{ 0, 0, 0 }
 };
-static const MITEM m_msg[] = {
-	{ "  Reply            ^R ", C_REPLY }, { "  Reply to all     ^E ", C_REPLYALL },
-	{ "  Forward          ^F ", C_FORWARD }, { "----------------------", C_SEP },
-	{ "  Mark as read         ", C_MARKREAD }, { "  Mark as unread   ^U ", C_UNREAD },
-	{ "  Flag             ^G ", C_FLAG },
-	{ "  Move to...       ^M ", C_MOVE }, { "  Delete          Del ", C_DELETE },
-	{ "  Select all       ^A ", C_SELALL },
-	{ "----------------------", C_SEP },
-	{ "  Send now         ^S ", C_SEND }, { "  Put in Outbox       ", C_SAVEOUT },
-	{ "  Attach file...   ^T ", C_ATTACH }, { "  Address book...  ^B ", C_ABOOK }, { 0, 0 }
+static const MBAR_ITEM m_msg[] = {
+	{ "Reply", "^R", C_REPLY },
+	{ "Reply to all", "^E", C_REPLYALL },
+	{ "Forward", "^F", C_FORWARD },
+	{ "-", 0, 0 },
+	{ "Mark as read", 0, C_MARKREAD },
+	{ "Mark as unread", "^U", C_UNREAD },
+	{ "Flag", "^G", C_FLAG },
+	{ "Move to...", "^M", C_MOVE },
+	{ "Delete", "Del", C_DELETE },
+	{ "Select all", "^A", C_SELALL },
+	{ "-", 0, 0 },
+	{ "Send now", "^S", C_SEND },
+	{ "Put in Outbox", 0, C_SAVEOUT },
+	{ "Attach file...", "^T", C_ATTACH },
+	{ "Address book...", "^B", C_ABOOK },
+	{ 0, 0, 0 }
 };
-static const MITEM m_fold[] = {
-	{ "  Show folders        ", C_FOLDERS }, { "  Refresh folder list ", C_REFRESH },
-	{ "  New folder...       ", C_NEWFOLDER }, { "  Rename folder...    ", C_RENFOLDER },
-	{ "  Delete folder...    ", C_DELFOLDER }, { 0, 0 }
+static const MBAR_ITEM m_fold[] = {
+	{ "Show folders", 0, C_FOLDERS },
+	{ "Refresh folder list", 0, C_REFRESH },
+	{ "New folder...", 0, C_NEWFOLDER },
+	{ "Rename folder...", 0, C_RENFOLDER },
+	{ "Delete folder...", 0, C_DELFOLDER },
+	{ 0, 0, 0 }
 };
-static const MITEM m_opts[] = {
-	{ "  Accounts...         ", C_ACCOUNTS }, { "  Settings...         ", C_SETTINGS },
-	{ "  Font...             ", C_FONT },
-	{ "----------------------", C_SEP }, { "  Work offline        ", C_OFFLINE },
-	{ "  Falcon mode (TLS)   ", C_FALCON },
-	{ "  Hebrew keyboard F10 ", C_HEBREW }, { "  Protocol log        ", C_LOG }, { 0, 0 }
+static const MBAR_ITEM m_opts[] = {
+	{ "Accounts...", 0, C_ACCOUNTS },
+	{ "Settings...", 0, C_SETTINGS },
+	{ "Font...", 0, C_FONT },
+	{ "-", 0, 0 },
+	{ "Work offline", 0, C_OFFLINE },
+	{ "Falcon mode (TLS)", 0, C_FALCON },
+	{ "Hebrew keyboard", "F10", C_HEBREW },
+	{ "Protocol log", 0, C_LOG },
+	{ 0, 0, 0 }
 };
 
-static const char *titles[] = { " EMail ", " File ", " Message ", " Folder ", " Options " };
-static const MITEM *drops[] = { m_desk, m_file, m_msg, m_fold, m_opts };
-#define NTITLES 5
+static const MBAR_TITLE bar[] = {
+	{ " EMail ", m_desk },
+	{ " File ", m_file },
+	{ " Message ", m_msg },
+	{ " Folder ", m_fold },
+	{ " Options ", m_opts },
+	{ 0, 0 }
+};
 
-#define MMAX 64
-static OBJECT menu[MMAX];
-static short menu_cmd[MMAX];
-
-static short find_item(short cmd)
-{
-	short i;
-	for (i = 0; i < MMAX; i++)
-		if (menu_cmd[i] == cmd)
-			return i;
-	return -1;
-}
-
-static void menu_build(void)
-{
-	short n = 0, t, i, cols = scr_w / gl_wchar, x = 0;
-	short first_title, first_drop, screen, prev_drop = -1;
-	memset(menu, 0, sizeof(menu));
-	/* 0 root, 1 bar, 2 active (titles), titles, screen, drops */
-	menu[0].ob_type = G_IBOX;
-	menu[0].ob_next = -1;
-	menu[0].ob_head = 1;
-	menu[0].ob_width = cols;
-	menu[0].ob_height = scr_h / gl_hchar;
-	menu[1].ob_type = G_BOX;
-	menu[1].ob_spec = 0x1100L;
-	menu[1].ob_head = menu[1].ob_tail = 2;
-	menu[1].ob_width = cols;
-	menu[1].ob_height = 0x201;
-	menu[2].ob_type = G_IBOX;
-	menu[2].ob_next = 1;
-	menu[2].ob_x = 2;
-	menu[2].ob_height = 0x301;
-	n = 3;
-	first_title = n;
-	for (t = 0; t < NTITLES; t++) {
-		OBJECT *o = &menu[n];
-		o->ob_type = G_TITLE;
-		o->ob_spec = (long)titles[t];
-		o->ob_head = o->ob_tail = -1;
-		o->ob_x = x;
-		o->ob_width = (short)strlen(titles[t]);
-		o->ob_height = 0x301;
-		o->ob_next = t + 1 < NTITLES ? n + 1 : 2;
-		x += o->ob_width;
-		n++;
-	}
-	menu[2].ob_head = first_title;
-	menu[2].ob_tail = n - 1;
-	menu[2].ob_width = x;
-	screen = n++;
-	menu[1].ob_next = screen;
-	menu[0].ob_tail = screen;
-	menu[screen].ob_type = G_IBOX;
-	menu[screen].ob_next = 0;
-	menu[screen].ob_y = 0x301;
-	menu[screen].ob_width = cols;
-	menu[screen].ob_height = 19;
-	first_drop = n;
-	x = 2;
-	for (t = 0; t < NTITLES; t++) {
-		const MITEM *it = drops[t];
-		short d = n++, k = 0, w = 0, dx = x + menu[first_title + t].ob_x;
-		for (i = 0; it[i].text; i++)
-			if ((short)strlen(it[i].text) > w)
-				w = (short)strlen(it[i].text);
-		if (dx + w > cols)
-			dx = cols - w;
-		menu[d].ob_type = G_BOX;
-		menu[d].ob_spec = 0xFF1100L;
-		menu[d].ob_x = t == 0 ? x : dx;
-		menu[d].ob_width = w;
-		menu[d].ob_head = n;
-		if (prev_drop >= 0)
-			menu[prev_drop].ob_next = d;
-		prev_drop = d;
-		for (i = 0; it[i].text; i++, k++) {
-			OBJECT *o = &menu[n];
-			o->ob_type = G_STRING;
-			o->ob_spec = (long)it[i].text;
-			o->ob_head = o->ob_tail = -1;
-			o->ob_y = k;
-			o->ob_width = w;
-			o->ob_height = 1;
-			o->ob_state = it[i].cmd == C_SEP ? DISABLED : 0;
-			o->ob_next = it[i + 1].text ? n + 1 : d;
-			menu_cmd[n] = it[i].cmd;
-			n++;
-		}
-		menu[d].ob_tail = n - 1;
-		menu[d].ob_height = k;
-	}
-	menu[prev_drop].ob_next = screen;
-	menu[screen].ob_head = first_drop;
-	menu[screen].ob_tail = prev_drop;
-	menu[n - 1].ob_flags |= LASTOB;
-	for (i = 0; i < n; i++)
-		rsrc_obfix(menu, i);
-}
+static MBAR mb;
 
 static void enable(short cmd, int on)
 {
-	short i = find_item(cmd);
+	short i = mbar_object(&mb, cmd);
 	if (i >= 0)
-		menu_ienable(menu, i, on ? 1 : 0);
+		menu_ienable(mb.tree, i, on ? 1 : 0);
 }
 
 void menu_update(void)
@@ -216,10 +137,10 @@ void menu_update(void)
 	enable(C_NEWFOLDER, cur_acct && !cur_acct->pop);
 	enable(C_DELFOLDER, cur_finfo && !cur_finfo->local && !cur_finfo->role);
 	enable(C_RENFOLDER, cur_finfo && !cur_finfo->local && !cur_finfo->role && !cur_finfo->noselect);
-	menu_icheck(menu, find_item(C_OFFLINE), opt.offline);
-	menu_icheck(menu, find_item(C_FALCON), opt.falcon);
-	menu_icheck(menu, find_item(C_HEBREW), hebrew_kbd);
-	menu_icheck(menu, find_item(C_LOG), opt.log);
+	menu_icheck(mb.tree, mbar_object(&mb, C_OFFLINE), opt.offline);
+	menu_icheck(mb.tree, mbar_object(&mb, C_FALCON), opt.falcon);
+	menu_icheck(mb.tree, mbar_object(&mb, C_HEBREW), hebrew_kbd);
+	menu_icheck(mb.tree, mbar_object(&mb, C_LOG), opt.log);
 }
 
 /* ---------------- status and helpers ---------------- */
@@ -992,7 +913,7 @@ static void crash_quit(const char *what)
 		wind_delete(main_h);
 	}
 	theme_exit();
-	menu_bar(menu, 0);
+	menu_bar(mb.tree, 0);
 	v_clsvwk(vdi_h);
 	appl_exit();
 }
@@ -1059,8 +980,13 @@ int main(void)
 	reader_init();
 	editor_init();
 	place_windows();
-	menu_build();
-	menu_bar(menu, 1);
+	if (mbar_build(&mb, bar, gl_wchar, gl_hchar, scr_w, scr_h)) {
+		form_alert(1, "[3][EMail: not enough memory.][ Quit ]");
+		v_clsvwk(vdi_h);
+		appl_exit();
+		return 1;
+	}
+	menu_bar(mb.tree, 1);
 	menu_update();
 	graf_mouse(ARROW, 0);
 
@@ -1098,8 +1024,8 @@ int main(void)
 		if (which & MU_MESAG) {
 			switch (msg[0]) {
 			case MN_SELECTED:
-				command(menu_cmd[msg[4]]);
-				menu_tnormal(menu, msg[3], 1);
+				command(mbar_command(&mb, msg[4]));
+				menu_tnormal(mb.tree, msg[3], 1);
 				break;
 			case AP_TERM:
 				quit = 1;
@@ -1164,7 +1090,7 @@ int main(void)
 	main_close();
 	store_save_settings();
 	theme_exit();			/* the palette back as it was */
-	menu_bar(menu, 0);
+	menu_bar(mb.tree, 0);
 	v_clsvwk(vdi_h);
 	appl_exit();
 	crash_remove();

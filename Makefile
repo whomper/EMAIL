@@ -42,7 +42,7 @@ HBSSLOBJ = $(patsubst $(BSSL)/src/%.c,$(OBJDIR)/hbssl/%.o,$(BSSLSRC))
 
 CORE    := util charset mime conn tls imap pop3 smtp store compose mail futil bidi secret ctime tz
 ATARI   := libc tos plat_tos net_tos sting gem dsprsa crash
-UI      := main draw win folders list reader editor dialogs popup font about dsp theme help alert mbar aboutbox
+UI      := main draw win folders list reader editor dialogs popup font about dsp theme help av alert mbar aboutbox
 
 OBJDIR  := build
 OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o $(OBJDIR)/crash_s.o \

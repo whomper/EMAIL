@@ -213,6 +213,28 @@ static void t_compose(void)
 	CHECK(!strcmp(raw, "To: dana@example.com\nCc: \nSubject: \n\n\n\n-- \nYaary\nSent from my Falcon"),
 	      "new message with signature [%s]", raw);
 	free(raw);
+
+	/* mailto: links, as EContact sends them with VA_START */
+	a.signature[0] = 0;
+	raw = compose_mailto(&a, "Maya Carter <maya@pixelpress.example>");
+	CHECK(!strcmp(raw, "To: Maya Carter <maya@pixelpress.example>\nCc: \nSubject: \n\n"),
+	      "mailto: a name and address [%s]", raw);
+	free(raw);
+	raw = compose_mailto(&a, "a@b.example,c@d.example?subject=Hello%20there&cc=e@f.example&body=Line%201%0D%0ALine%202");
+	CHECK(!strcmp(raw, "To: a@b.example,c@d.example\nCc: e@f.example\nSubject: Hello there\n\nLine 1\nLine 2"),
+	      "mailto: subject, cc, body, escapes [%s]", raw);
+	free(raw);
+	raw = compose_mailto(&a, "?to=x@y.example&TO=z@y.example&Subject=a%0Ab&subject=second&odd&=v&body=%zz%4");
+	CHECK(!strcmp(raw, "To: x@y.example, z@y.example\nCc: \nSubject: a b\n\n%zz%4"),
+	      "mailto: to= twice, one subject, a line break kept out of it, bad escapes kept [%s]", raw);
+	free(raw);
+	raw = compose_mailto(&a, "");
+	CHECK(!strcmp(raw, "To: \nCc: \nSubject: \n\n"), "mailto: nothing [%s]", raw);
+	free(raw);
+	strcpy(a.signature, "Yaary");
+	raw = compose_mailto(&a, "q@r.example?body=Hi");
+	CHECK(!strcmp(raw, "To: q@r.example\nCc: \nSubject: \n\nHi\n\n-- \nYaary"), "mailto: body, then the signature [%s]", raw);
+	free(raw);
 }
 
 static void t_bidi(void)

@@ -374,6 +374,83 @@ char *compose_new(ACCOUNT *a, const char *to)
 	return sb_steal(&b);
 }
 
+static int hex_digit(char c)
+{
+	return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+	       c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+}
+
+/* s[0..n) with %XX escapes undone and CR LF as LF, after what out has */
+static void url_text(char *out, long size, const char *s, long n)
+{
+	long k = (long)strlen(out), i;
+	for (i = 0; i < n && k < size - 1; i++) {
+		char c = s[i];
+		if (c == '%' && i + 2 < n && hex_digit(s[i + 1]) >= 0 && hex_digit(s[i + 2]) >= 0) {
+			c = (char)(hex_digit(s[i + 1]) * 16 + hex_digit(s[i + 2]));
+			i += 2;
+		}
+		if (c == '\r')
+			continue;
+		out[k++] = c;
+	}
+	out[k] = 0;
+}
+
+static void one_line(char *s)
+{
+	for (; *s; s++)
+		if (*s == '\n')
+			*s = ' ';
+}
+
+char *compose_mailto(ACCOUNT *a, const char *url)
+{
+	char to[512] = "", cc[512] = "", subject[256] = "", body[2048] = "";
+	const char *q = strchr(url, '?'), *p;
+	SBUF b;
+	url_text(to, sizeof(to), url, q ? q - url : (long)strlen(url));
+	for (p = q; p && *p; ) {
+		const char *name = p + 1, *eq = strchr(name, '='), *end = strchr(name, '&');
+		long nl;
+		if (!end)
+			end = name + strlen(name);
+		p = *end ? end : 0;
+		if (!eq || eq > end)
+			continue;
+		nl = eq - name;
+		/* to= and cc= add to the line; one subject and one body */
+		if (nl == 2 && !strncasecmp(name, "to", 2)) {
+			if (to[0] && strlen(to) < sizeof(to) - 3)
+				strcat(to, ", ");
+			url_text(to, sizeof(to), eq + 1, end - eq - 1);
+		} else if (nl == 2 && !strncasecmp(name, "cc", 2)) {
+			if (cc[0] && strlen(cc) < sizeof(cc) - 3)
+				strcat(cc, ", ");
+			url_text(cc, sizeof(cc), eq + 1, end - eq - 1);
+		} else if (nl == 7 && !strncasecmp(name, "subject", 7) && !subject[0]) {
+			url_text(subject, sizeof(subject), eq + 1, end - eq - 1);
+		} else if (nl == 4 && !strncasecmp(name, "body", 4) && !body[0]) {
+			url_text(body, sizeof(body), eq + 1, end - eq - 1);
+		}
+	}
+	/* one line each: a line break in them would start the body */
+	one_line(to);
+	one_line(cc);
+	one_line(subject);
+	sb_init(&b);
+	sb_adds(&b, "To: ");
+	sb_adds(&b, to);
+	sb_adds(&b, "\nCc: ");
+	sb_adds(&b, cc);
+	sb_adds(&b, "\nSubject: ");
+	sb_adds(&b, subject);
+	sb_adds(&b, "\n\n");
+	sb_adds(&b, body);
+	add_signature(&b, a);
+	return sb_steal(&b);
+}
+
 static void quote_text(SBUF *b, const char *text)
 {
 	const char *p = text;

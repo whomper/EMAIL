@@ -128,6 +128,7 @@ void editor_open(ACCOUNT *a, char *text, const char *in_reply_to, const char *re
 int  editor_dirty(void);
 void editor_send(int now);
 void editor_attach(void);
+void editor_attach_file(const char *path);
 void editor_insert_address(void);
 char *dlg_pick_address(void);
 

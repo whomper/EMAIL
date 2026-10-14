@@ -22,6 +22,10 @@
 
 /* starting texts for the editor (malloc'ed) */
 char *compose_new(ACCOUNT *a, const char *to);
+/* from a mailto: link (RFC 6068), as EContact and other programs send it
+   with VA_START: "a@b, Name <c@d>?subject=Hi&cc=e@f&body=..." with %XX
+   escapes; text after mailto: */
+char *compose_mailto(ACCOUNT *a, const char *url);
 char *compose_reply(ACCOUNT *a, MSG *m, int all);
 /* eml: path of the cached original, attached when it has attachments */
 char *compose_forward(ACCOUNT *a, MSG *m, const char *eml);

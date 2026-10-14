@@ -17,6 +17,7 @@
 #include "util.h"
 #include "crash.h"
 #include "help.h"
+#include "av.h"
 #include "mbar.h"
 #include "../src/version.h"
 
@@ -279,6 +280,47 @@ static ACCOUNT *account_for_new(void)
 	if (cur_acct)
 		return cur_acct;
 	return dlg_pick_account("Write from which account?");
+}
+
+/* VA_START (common/ui/av.c), from EContact's mail button, the desktop or
+   another program: "mailto:..." starts a new message; file names are
+   attached to the message being written, or to a new one; nothing brings
+   the window to the front */
+static void av_start(const char *s)
+{
+	char path[200];
+	const char *p = s;
+	ACCOUNT *a;
+	main_open();
+	if (!*s)
+		return;
+	if (!naccts) {
+		alert(1, "[1][Set up your mail account first:|Options > Accounts.][ OK ]");
+		return;
+	}
+	if (!strncasecmp(s, "mailto:", 7)) {
+		a = account_for_new();
+		if (a)
+			editor_open(a, compose_mailto(a, s + 7), 0, 0);
+		return;
+	}
+	while ((p = av_arg(p, path, sizeof(path))) != 0) {
+		if (!pf_exists(path)) {
+			alert(1, "[1][Can't attach %s:|it isn't there.][ OK ]", path);
+			continue;
+		}
+		if (w_editor.h <= 0) {
+			a = account_for_new();
+			if (!a)
+				return;
+			editor_open(a, compose_new(a, ""), 0, 0);
+			if (w_editor.h <= 0)
+				return;
+		}
+		editor_attach_file(path);
+	}
+	if (w_editor.h > 0)
+		win_top(&w_editor);
 }
 
 static void cmd_reply(int all, int forward)
@@ -959,6 +1001,7 @@ int main(void)
 	store_init(dir);
 	crash_install(dir, "EMail", mail_version);
 	help_init();			/* memory the help viewer may read */
+	av_init("EMAIL");		/* the desktop's AV server, if there is one */
 	crash_cleanup = crash_quit;
 	crash_report = conn_log_append;	/* the report in the protocol log too */
 	if (store_plain_passwords && !store_lost_passwords)
@@ -1022,6 +1065,7 @@ int main(void)
 		if (which & MU_M1)
 			win_hover(ev.mx, ev.my);
 		if (which & MU_MESAG) {
+			const char *va;
 			switch (msg[0]) {
 			case MN_SELECTED:
 				command(mbar_command(&mb, msg[4]));
@@ -1031,7 +1075,10 @@ int main(void)
 				quit = 1;
 				break;
 			default:
-				win_message(msg);
+				if (av_message(msg, &va) == AV_START)
+					av_start(va);
+				else
+					win_message(msg);
 			}
 		}
 		if (which & MU_KEYBD) {
@@ -1091,6 +1138,7 @@ int main(void)
 	store_save_settings();
 	theme_exit();			/* the palette back as it was */
 	menu_bar(mb.tree, 0);
+	av_exit();
 	v_clsvwk(vdi_h);
 	appl_exit();
 	crash_remove();

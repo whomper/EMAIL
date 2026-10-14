@@ -535,8 +535,7 @@ void editor_attach(void)
 {
 	static char path[160], name[16];
 	short button;
-	char full[200], line[220];
-	long he;
+	char full[200];
 	if (w_editor.h <= 0)
 		return;
 	if (!path[0]) {
@@ -553,6 +552,16 @@ void editor_attach(void)
 			bs[1] = 0;
 	}
 	strncat(full, name, sizeof(full) - strlen(full) - 1);
+	editor_attach_file(full);
+}
+
+/* an Attach: line for the file, at the end of the header */
+void editor_attach_file(const char *full)
+{
+	char line[220];
+	long he;
+	if (w_editor.h <= 0)
+		return;
 	snprintf(line, sizeof(line), "Attach: %s", full);
 	he = header_end();
 	if (he < 0)

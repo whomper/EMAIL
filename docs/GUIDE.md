@@ -245,6 +245,16 @@ your text...
 Replies quote the original and keep the thread together (In-Reply-To and
 References). Forwarding a message with attachments attaches the original.
 
+## From other programs
+
+**mail** in EContact (the AERA address book) opens a new message to the
+person or group you chose. Any program, or a desktop such as Thing,
+jinnee or Gemini, can do the same with the AV protocol's VA_START:
+
+- a `mailto:` link opens a new message, with the link's subject and
+  text when it has them;
+- files are attached to the message being written, or to a new one.
+
 ## Hebrew
 
 EMail shows Hebrew mail in UTF-8, ISO-8859-8 or windows-1255, Hebrew

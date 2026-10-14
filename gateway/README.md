@@ -66,7 +66,7 @@ on the local network.
 EMail converts mail to the Atari character set itself, Hebrew included, so
 it only needs a plain TLS tunnel: this gateway. Troll has its own proxy
 (`falcon_imap_logproxy.py` in
-[whomper/atari_web](https://github.com/whomper/atari_web)), which rewrites
+[whomper/AERA-Gateway](https://github.com/whomper/AERA-Gateway)), which rewrites
 messages for Troll; EMail doesn't use it. The two run side by side: this
 gateway on the standard ports (143, 587, 110), the Troll proxy on its own
 (1143). To give this gateway other ports instead:

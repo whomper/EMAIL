@@ -23,7 +23,7 @@ CFLAGS  := -m68000 -Os -fomit-frame-pointer -ffreestanding -fno-builtin \
            -fno-pic -fno-pie -fno-tree-loop-distribute-patterns -fno-store-merging \
            -fno-asynchronous-unwind-tables -Wall -Wno-pointer-sign \
            -DMAIL_TOS -nostdinc -isystem $(GCCINC) -Iatari/include -Icommon/atari/include \
-           -Isrc -Icommon/src -Iatari -Icommon/atari -Iui -Icommon/third_party/bearssl/inc
+           -Isrc -Icommon/src -Iatari -Icommon/atari -Iui -Icommon/ui -Icommon/third_party/bearssl/inc
 LDFLAGS := -m68000 -nostdlib -static -no-pie -Wl,--emit-relocs -Wl,-T,common/atari/link.ld \
            -Wl,--build-id=none -Wl,-z,noexecstack -Wl,--no-warn-rwx-segments
 
@@ -42,7 +42,7 @@ HBSSLOBJ = $(patsubst $(BSSL)/src/%.c,$(OBJDIR)/hbssl/%.o,$(BSSLSRC))
 
 CORE    := util charset mime conn tls imap pop3 smtp store compose mail futil bidi secret ctime tz
 ATARI   := libc tos plat_tos net_tos sting gem dsprsa crash
-UI      := main draw win folders list reader editor dialogs popup font about dsp theme
+UI      := main draw win folders list reader editor dialogs popup font about dsp theme help
 
 OBJDIR  := build
 OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o $(OBJDIR)/crash_s.o \

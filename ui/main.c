@@ -16,6 +16,7 @@
 #include "../src/plat.h"
 #include "util.h"
 #include "crash.h"
+#include "help.h"
 #include "../src/version.h"
 
 short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes;
@@ -32,36 +33,11 @@ void editor_init(void);
 
 /* ---------------- help ---------------- */
 
-/* the user guide in ST-Guide, when it runs and EMAIL.HYP is next to
-   EMAIL.PRG: a VA_START with the file's path, which ST-Guide opens at its
-   main page. The path goes in memory other programs may read (MiNT's
-   memory protection). 0 when it can't, and the Help key shows the keys */
+/* the user guide, EMAIL.HYP, in EHypView or ST-Guide (common/ui/help.c);
+   0 when no viewer runs, and the Help key shows the keys */
 static int open_help(void)
 {
-	static char *path;
-	short id = appl_find("ST-GUIDE"), msg[8];
-	if (id < 0)
-		return 0;
-	if (!path) {
-		path = Mxalloc(220, 0x22);	/* global, ST or TT RAM */
-		if ((long)path == -32 || (long)path <= 0)
-			path = Malloc(220);	/* TOS 1.x: no memory protection */
-		if ((long)path <= 0) {
-			path = 0;
-			return 0;
-		}
-	}
-	path_join(path, 220, opt.workdir, "EMAIL.HYP");
-	if (!pf_exists(path))
-		return 0;
-	msg[0] = 0x4711;		/* VA_START */
-	msg[1] = ap_id;
-	msg[2] = 0;
-	msg[3] = (short)((unsigned long)path >> 16);
-	msg[4] = (short)((unsigned long)path & 0xffff);
-	msg[5] = msg[6] = msg[7] = 0;
-	appl_write(id, 16, msg);
-	return 1;
+	return help_show(opt.workdir, "EMAIL.HYP", 0);
 }
 
 /* ---------------- menu ---------------- */
@@ -1061,6 +1037,7 @@ int main(void)
 	work_dir(dir, sizeof(dir));
 	store_init(dir);
 	crash_install(dir, "EMail", mail_version);
+	help_init();			/* memory the help viewer may read */
 	crash_cleanup = crash_quit;
 	crash_report = conn_log_append;	/* the report in the protocol log too */
 	if (store_plain_passwords && !store_lost_passwords)

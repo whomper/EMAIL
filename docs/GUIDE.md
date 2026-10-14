@@ -32,6 +32,7 @@ C:\EMAIL\EMAIL.INF      settings and accounts (each setting has a note above it)
 C:\EMAIL\EMAIL.KEY      the key the passwords in EMAIL.INF are encrypted with
 C:\EMAIL\ADDRESS.TXT   address book
 C:\EMAIL\EMAIL.LOG      protocol log, when switched on
+C:\EMAIL\CRASH.LOG      what happened, if EMail ever crashes
 C:\EMAIL\CACERT.PEM    root certificates, for Falcon mode only
 C:\EMAIL\ROOTS.DAT     the same, decoded ahead of time (Falcon mode only)
 C:\EMAIL\EMAIL.HYP     this guide for ST-Guide (the Help key opens it)
@@ -371,6 +372,15 @@ the image and mask for icon editors. For EmuTOS,
   need an app password.
 - **Options > Protocol log** writes the conversation with the servers to
   `EMAIL.LOG` (passwords are hidden); it shows exactly what a server said.
+  Each line goes to disk as it happens, so after a crash or a reset the
+  log is complete up to that moment.
+- **A crash**: if EMail itself goes wrong (what would be 2 to 8 bombs),
+  it says so, writes what happened to `CRASH.LOG` and quits, leaving the
+  Atari running. A crash in the system or a driver still gives the
+  bombs; TOS keeps a record of them, and EMail adds it to `CRASH.LOG`
+  the next time it starts (and says so if the crash was in EMail). Send
+  `CRASH.LOG`, with `EMAIL.LOG` if the log was on, to the author. Under
+  MiNT or MagiC, which handle crashes themselves, there is no CRASH.LOG.
 
 ## Limits
 

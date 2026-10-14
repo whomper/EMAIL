@@ -37,11 +37,11 @@ BSSLOBJ  = $(patsubst $(BSSL)/src/%.c,$(OBJDIR)/bssl/%.o,$(BSSLSRC))
 HBSSLOBJ = $(patsubst $(BSSL)/src/%.c,$(OBJDIR)/hbssl/%.o,$(BSSLSRC))
 
 CORE    := util charset mime conn tls imap pop3 smtp store compose mail futil bidi secret ctime tz
-ATARI   := libc tos plat_tos net_tos sting gem dsprsa
+ATARI   := libc tos plat_tos net_tos sting gem dsprsa crash
 UI      := main draw win folders list reader editor dialogs popup font about dsp theme
 
 OBJDIR  := build
-OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o \
+OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o $(OBJDIR)/crash_s.o \
            $(addprefix $(OBJDIR)/,$(addsuffix .o,$(CORE) $(ATARI) $(UI)))
 HDRS    := $(wildcard src/*.h atari/*.h atari/include/*.h ui/*.h dsp/*.h)
 
@@ -78,6 +78,8 @@ $(OBJDIR)/%.o: ui/%.c $(HDRS) | $(OBJDIR)
 $(OBJDIR)/crt0.o: atari/crt0.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/sting_s.o: atari/sting.S | $(OBJDIR)
+	$(CC) -m68000 -c -o $@ $<
+$(OBJDIR)/crash_s.o: atari/crash.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/nf.o: atari/nf.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<

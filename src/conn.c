@@ -110,9 +110,11 @@ const char *conn_security(CONN *c)
 long conn_bytes, conn_bytes_out;
 void (*conn_tick)(void);
 
-/* the log is written in blocks: opening the file for every line made a
-   big download crawl on an Atari disk. Milestones (" -- ", " !! ")
-   write it out at once, so a crash loses little */
+/* the log goes to disk line by line (write-through), so a crash or a
+   reset loses none of it: TOS writes a file's length only when it is
+   closed. A line is put together here first. The log is off unless the
+   user turns it on, and a message's body isn't logged line by line, so
+   this costs little */
 static char logbuf[4096];
 static int loglen;
 
@@ -180,8 +182,7 @@ void conn_log(const char *who, const char *dir, const char *text, long n)
 		log_add(text, n);
 	}
 	log_add("\r\n", 2);
-	if (dir[1] == '-' || dir[1] == '!')
-		conn_log_flush();
+	conn_log_flush();
 }
 
 long conn_bufsize = 16384;

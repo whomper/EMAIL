@@ -15,6 +15,7 @@
 #include "../src/tls.h"
 #include "../src/plat.h"
 #include "../src/util.h"
+#include "crash.h"
 
 short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes;
 short gl_wchar, gl_hchar;
@@ -251,6 +252,8 @@ void status(const char *msg)
 	char tmp[120];
 	snprintf(tmp, sizeof(tmp), " %s", msg);
 	main_status(*msg ? tmp : "");
+	if (*msg)
+		crash_note(msg);
 }
 
 void busy(int on)
@@ -899,6 +902,14 @@ int falcon_mode_set(int on)
 
 /* ---------------- events ---------------- */
 
+#ifdef CRASH_TEST
+static void crash_test_sup(void)
+{
+	volatile long *p = (volatile long *)0xFFFFFA40L;	/* no TT MFP here */
+	(void)*p;
+}
+#endif
+
 static int shortcut(short kstate, short key)
 {
 	short scan = KEY_SCAN(key);
@@ -907,6 +918,27 @@ static int shortcut(short kstate, short key)
 		set_hebrew_kbd(!hebrew_kbd);
 		return 1;
 	}
+#ifdef CRASH_TEST
+	/* test builds only: F1-F4 crash on purpose */
+	if (scan >= 0x3b && scan <= 0x3e) {
+		static volatile long *volatile bad;
+		static void (*volatile ill)(void);
+		static const unsigned short illegal[] = { 0x4afc };
+		if (scan == 0x3b) {		/* bus error in EMail */
+			bad = (long *)0x10L;
+			*bad = 0;
+		} else if (scan == 0x3c) {	/* bus error in supervisor mode */
+			Supexec(crash_test_sup);
+		} else if (scan == 0x3d) {	/* illegal instruction */
+			ill = (void (*)(void))illegal;
+			ill();
+		} else {			/* address error (68000) */
+			bad = (long *)0x20001L;
+			*bad = 0;
+		}
+		return 1;
+	}
+#endif
 	if (scan == 0x62) {		/* Help */
 		if (!open_help())
 			dlg_keys();
@@ -993,6 +1025,28 @@ static void quit_clearing(const char *account, const char *folder)
 	status(m);
 }
 
+/* EMail crashed and CRASH.LOG is written: say so and leave GEM tidy.
+   Only the AES and VDI: the heap may be what went wrong */
+static void crash_quit(const char *what)
+{
+	char a[200];
+	graf_mouse(ARROW, 0);
+	snprintf(a, sizeof(a), "[3][EMail has crashed|(%s).|What happened is in|CRASH.LOG, next to EMAIL.PRG.][ Quit ]", what);
+	form_alert(1, a);
+	if (w_editor.h > 0) {
+		wind_close(w_editor.h);
+		wind_delete(w_editor.h);
+	}
+	if (main_h > 0) {
+		wind_close(main_h);
+		wind_delete(main_h);
+	}
+	theme_exit();
+	menu_bar(menu, 0);
+	v_clsvwk(vdi_h);
+	appl_exit();
+}
+
 int main(void)
 {
 	short work_in_dummy, work_out[57], msg[8], d;
@@ -1032,6 +1086,8 @@ int main(void)
 
 	work_dir(dir, sizeof(dir));
 	store_init(dir);
+	crash_install(dir);
+	crash_cleanup = crash_quit;
 	if (store_plain_passwords && !store_lost_passwords)
 		store_save_settings();		/* encrypt them right away */
 	falcon_dsp_init();
@@ -1060,6 +1116,9 @@ int main(void)
 	folders_build();
 	list_load();
 	reader_clear();
+
+	if (crash_previous())
+		alert(1, "[1][EMail crashed last time|(%s).|What happened is in|CRASH.LOG, next to EMAIL.PRG.][ OK ]", crash_previous());
 
 	if (!naccts) {
 		alert(1, "[1][Welcome to EMail!||Let's set up your mail account.][ OK ]");
@@ -1156,5 +1215,6 @@ int main(void)
 	menu_bar(menu, 0);
 	v_clsvwk(vdi_h);
 	appl_exit();
+	crash_remove();
 	return 0;
 }

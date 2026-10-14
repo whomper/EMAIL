@@ -11,7 +11,7 @@
 #include "ui.h"
 #include "theme.h"
 #include "../src/mail.h"
-#include "../src/util.h"
+#include "util.h"
 #include "../src/plat.h"
 
 MSG *cur_msg;

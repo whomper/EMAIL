@@ -13,7 +13,7 @@
 #include "../src/plat.h"
 #include "../src/mail.h"
 #include "../src/compose.h"
-#include "../src/util.h"
+#include "util.h"
 
 ACCOUNT *cur_acct;
 FINFO *cur_finfo;

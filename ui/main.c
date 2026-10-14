@@ -14,7 +14,7 @@
 #include "../src/conn.h"
 #include "../src/tls.h"
 #include "../src/plat.h"
-#include "../src/util.h"
+#include "util.h"
 #include "crash.h"
 
 short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes;

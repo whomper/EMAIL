@@ -13,8 +13,8 @@
 #include <string.h>
 #include "ui.h"
 #include "theme.h"
-#include "../src/util.h"
-#include "../src/bidi.h"
+#include "util.h"
+#include "bidi.h"
 
 WIN w_folders, w_list, w_reader, w_editor;
 static WIN *panes[] = { &w_folders, &w_list, &w_reader };

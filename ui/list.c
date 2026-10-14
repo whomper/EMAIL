@@ -12,7 +12,7 @@
 #include "ui.h"
 #include "theme.h"
 #include "../src/mail.h"
-#include "../src/util.h"
+#include "util.h"
 
 static long *view;		/* indexes into cur_folder->h, newest first */
 static long nview, sel = -1;

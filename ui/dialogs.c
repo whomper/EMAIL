@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "ui.h"
-#include "../src/bidi.h"
-#include "../src/util.h"
-#include "../src/charset.h"
-#include "../src/tz.h"
+#include "bidi.h"
+#include "util.h"
+#include "charset.h"
+#include "tz.h"
 
 #define DMAX 72
 #define TMAX 24

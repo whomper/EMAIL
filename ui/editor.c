@@ -13,8 +13,8 @@
 #include "ui.h"
 #include "../src/mail.h"
 #include "../src/compose.h"
-#include "../src/bidi.h"
-#include "../src/util.h"
+#include "bidi.h"
+#include "util.h"
 
 typedef struct {
 	char *s;

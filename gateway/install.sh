@@ -48,6 +48,10 @@ if [ "$(id -u)" != 0 ]; then
   echo "Please run with sudo." >&2
   exit 1
 fi
+if [ -n "$ALLOW" ] && ! command -v ufw >/dev/null; then
+  echo "--allow needs the ufw firewall: sudo apt install ufw" >&2
+  exit 1
+fi
 
 apt-get update -qq
 apt-get install -y -qq stunnel4
@@ -109,14 +113,16 @@ systemctl enable stunnel4 >/dev/null 2>&1 || true
 systemctl restart stunnel4
 
 if [ -n "$ALLOW" ]; then
-  if command -v ufw >/dev/null; then
-    for p in $P_IMAP $P_SMTP $P_POP3; do
-      ufw allow from "$ALLOW" to any port $p proto tcp >/dev/null
-      ufw deny $p/tcp >/dev/null
-    done
+  for p in $P_IMAP $P_SMTP $P_POP3; do
+    ufw allow from "$ALLOW" to any port $p proto tcp >/dev/null
+    ufw deny $p/tcp >/dev/null
+  done
+  if ufw status | grep -q "^Status: active"; then
     echo "Only $ALLOW may use the gateway (ufw)."
   else
-    echo "ufw is not installed: anyone on your network can use the gateway." >&2
+    echo "WARNING: the rules for $ALLOW are in place, but ufw is off, so anyone on" >&2
+    echo "         your network can use the gateway until you allow SSH and turn it on:" >&2
+    echo "         sudo ufw allow ssh && sudo ufw enable" >&2
   fi
 elif command -v ufw >/dev/null && ufw status | grep -q "^Status: active"; then
   # a firewall is on: without a rule the Atari can't reach the gateway

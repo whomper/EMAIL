@@ -76,15 +76,20 @@ void main_status(const char *s);
 #define TX_RIGHT    4	/* align right-to-left text to the right edge */
 #define TX_LIGHT    8
 #define TX_LTR     16	/* left-to-right paragraph even when it starts in Hebrew */
+#define TX_DIM     TX_LIGHT	/* what can't be used: the shared popup's disabled items */
 void fill(GRECT *r, short color);
 extern short text_pen;		/* the colour of text (theme.h pens); set, draw, set back to 1 */
 /* text in a colour: text_at with text_pen set for the one call */
 #define text_pen_at(p, x, y, s, n, cols, fl) \
 	do { text_pen = (p); text_at(x, y, s, n, cols, fl); text_pen = 1; } while (0)
 void clip_on(GRECT *r);
+void clip_off(void);
+void *st_ram(long n);		/* a bitmap's room in ST RAM, for the blitter (n <= 512) */
 /* draw up to cols characters of Atari text at x,y (logical order in) */
 void text_at(short x, short y, const char *s, long n, short cols, short flags);
 void hline(short x1, short x2, short y);
+void frame(GRECT *r, short color);
+void line_col(short x1, short y1, short x2, short y2, short color);
 /* word wrap: start of each line of text into breaks[]; returns count */
 long wrap_text(const char *s, long n, short width, long *breaks, long max);
 short line_rtl(const char *s, long n);
@@ -165,11 +170,13 @@ extern short dlg_falcon;		/* the Settings dialog's Falcon mode box */
 void falcon_dsp_init(void);		/* RSA on the DSP in Falcon mode (dsp.c) */
 const char *falcon_dsp_state(void);	/* "DSP" / "68030" for the About box */
 
-/* right-click menus (popup.c): the chosen item, or -1 */
-short popup(short x, short y, const char *const *labels, short n);
+/* right-click menus (common/ui/popup.c): the chosen item, or -1 */
+#include "popup.h"
 
 /* font.c */
 void font_apply(void);		/* opt.font_id/pt -> cw, ch */
+void font_sys_push(void);	/* the system font, for a popup or the About box */
+void font_sys_pop(void);	/* back to the window's font */
 void font_reselect(void);	/* the text font again, after drawing in another */
 /* how the text font gets its Hebrew letters */
 #define HM_MAP     0		/* where opt.hebfont says (system and bitmap fonts) */

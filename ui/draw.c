@@ -22,6 +22,15 @@ void clip_on(GRECT *r)
 	vs_clip(vdi_h, 1, pxy);
 }
 
+/* no clipping: the whole screen (the shared popup and About box) */
+void clip_off(void)
+{
+	short pxy[4] = { 0, 0, 0, 0 };
+	pxy[2] = scr_w - 1;
+	pxy[3] = scr_h - 1;
+	vs_clip(vdi_h, 0, pxy);
+}
+
 void fill(GRECT *r, short color)
 {
 	short pxy[4];
@@ -48,6 +57,44 @@ void hline(short x1, short x2, short y)
 	vswr_mode(vdi_h, 1);
 	vsl_color(vdi_h, pen[P_LINE]);
 	v_pline(vdi_h, 2, pxy);
+}
+
+/* ST RAM for a bitmap to blit (the About box's icon): the screen can't
+   be fed from TT RAM */
+static unsigned short st_fallback[256];
+static unsigned short *st_buf;
+
+void *st_ram(long n)
+{
+	if (!st_buf) {
+		void *p = Mxalloc(sizeof(st_fallback), 0);
+		st_buf = (long)p > 0 ? p : st_fallback;
+	}
+	return n <= (long)sizeof(st_fallback) ? st_buf : 0;
+}
+
+void line_col(short x1, short y1, short x2, short y2, short color)
+{
+	short p[4];
+	p[0] = x1;
+	p[1] = y1;
+	p[2] = x2;
+	p[3] = y2;
+	vswr_mode(vdi_h, 1);
+	vsl_color(vdi_h, color);
+	v_pline(vdi_h, 2, p);
+}
+
+void frame(GRECT *r, short color)
+{
+	short p[10];
+	p[0] = p[6] = p[8] = r->x;
+	p[1] = p[3] = p[9] = r->y;
+	p[2] = p[4] = r->x + r->w - 1;
+	p[5] = p[7] = r->y + r->h - 1;
+	vswr_mode(vdi_h, 1);
+	vsl_color(vdi_h, color);
+	v_pline(vdi_h, 5, p);
 }
 
 short line_rtl(const char *s, long n)

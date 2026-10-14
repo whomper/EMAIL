@@ -112,8 +112,8 @@ static void set_title(void)
 	char t[100];
 	snprintf(t, sizeof(t), " %s - %s%s ", "New message", e_acct ? e_acct->name : "", dirty ? " *" : "");
 	win_title(&w_editor, t);
-	win_info(&w_editor, hebrew_kbd ? " Hebrew keyboard (F10)   ^S send   Esc close"
-				       : " ^S send   ^T attach file   F10 Hebrew   Esc close");
+	win_info(&w_editor, hebrew_kbd ? " Hebrew keyboard (F10)   \x01^D send   Esc close"
+				       : " \x01^D send   ^S Outbox   ^T attach   F10 Hebrew   Esc close");
 }
 
 void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
@@ -653,8 +653,8 @@ static void rclick(WIN *w, short mx, short my)
 	const char *lab[8];
 	short r;
 	(void)w;
-	lab[0] = "Send now          ^S";
-	lab[1] = "Put in Outbox";
+	lab[0] = "Send now         \x01^D";
+	lab[1] = "Put in Outbox     ^S";
 	lab[2] = "-";
 	lab[3] = "Attach file...    ^T";
 	lab[4] = "Address book...   ^B";

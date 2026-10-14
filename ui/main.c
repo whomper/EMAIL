@@ -18,6 +18,7 @@
 #include "crash.h"
 #include "help.h"
 #include "av.h"
+#include "aboutbox.h"
 #include "mbar.h"
 #include "../src/version.h"
 
@@ -35,11 +36,13 @@ void editor_init(void);
 
 /* ---------------- help ---------------- */
 
-/* the user guide, EMAIL.HYP, in EHypView or ST-Guide (common/ui/help.c);
-   0 when no viewer runs, and the Help key shows the keys */
-static int open_help(void)
+/* the Help key: the user guide, EMAIL.HYP, in EHypView or ST-Guide
+   (common/ui/help.c), else an alert saying how to get a viewer, which
+   can show the keys instead */
+static void help_key_pressed(void)
 {
-	return help_show(opt.workdir, "EMAIL.HYP", 0);
+	if (help_key(opt.workdir, "EMAIL.HYP", 0, "Keys"))
+		dlg_keys();
 }
 
 /* ---------------- menu ---------------- */
@@ -53,18 +56,19 @@ static const MBAR_ITEM m_desk[] = {
 };
 static const MBAR_ITEM m_file[] = {
 	{ "New message", "^N", C_NEW },
-	{ "Check mail", "^K", C_CHECK },
+	{ "Check mail", "\x01^N", C_CHECK },
 	{ "Send Outbox", 0, C_SENDQ },
 	{ "-", 0, 0 },
 	{ "Save attachment...", 0, C_SAVEATT },
 	{ "-", 0, 0 },
+	{ "Close window", "^W", C_CLOSE },
 	{ "Quit", "^Q", C_QUIT },
 	{ 0, 0, 0 }
 };
 static const MBAR_ITEM m_msg[] = {
 	{ "Reply", "^R", C_REPLY },
-	{ "Reply to all", "^E", C_REPLYALL },
-	{ "Forward", "^F", C_FORWARD },
+	{ "Reply to all", "\x01^R", C_REPLYALL },
+	{ "Forward", "\x01^F", C_FORWARD },
 	{ "-", 0, 0 },
 	{ "Mark as read", 0, C_MARKREAD },
 	{ "Mark as unread", "^U", C_UNREAD },
@@ -73,8 +77,8 @@ static const MBAR_ITEM m_msg[] = {
 	{ "Delete", "Del", C_DELETE },
 	{ "Select all", "^A", C_SELALL },
 	{ "-", 0, 0 },
-	{ "Send now", "^S", C_SEND },
-	{ "Put in Outbox", 0, C_SAVEOUT },
+	{ "Send now", "\x01^D", C_SEND },
+	{ "Put in Outbox", "^S", C_SAVEOUT },
 	{ "Attach file...", "^T", C_ATTACH },
 	{ "Address book...", "^B", C_ABOOK },
 	{ 0, 0, 0 }
@@ -201,8 +205,8 @@ void set_hebrew_kbd(short on)
 	menu_update();
 	if (w_editor.h > 0) {
 		/* the editor shows the keyboard in its info line */
-		char *i = hebrew_kbd ? " Hebrew keyboard (F10)   ^S send   Esc close"
-				     : " ^S send   ^T attach file   F10 Hebrew   Esc close";
+		char *i = hebrew_kbd ? " Hebrew keyboard (F10)   \x01^D send   Esc close"
+				     : " \x01^D send   ^S Outbox   ^T attach   F10 Hebrew   Esc close";
 		win_info(&w_editor, i);
 	}
 }
@@ -728,6 +732,17 @@ static void command(short cmd)
 	}
 	case C_SAVEATT: cmd_save_attachment(); break;
 	case C_QUIT: do_quit(); break;
+	case C_CLOSE:
+		/* the editor; the main window closing ends EMail */
+		if (win_topmost() == &w_editor) {
+			if (w_editor.closed)
+				w_editor.closed(&w_editor);
+			else
+				win_close(&w_editor);
+		} else {
+			main_closed();
+		}
+		break;
 	case C_REPLY: cmd_reply(0, 0); break;
 	case C_REPLYALL: cmd_reply(1, 0); break;
 	case C_FORWARD: cmd_reply(0, 1); break;
@@ -853,28 +868,33 @@ static int shortcut(short kstate, short key)
 	if (crash_test(scan))	/* test builds only: F1-F4 crash on purpose */
 		return 1;
 	if (scan == 0x62) {		/* Help */
-		if (!open_help())
-			dlg_keys();
+		help_key_pressed();
 		return 1;
 	}
 	if (kstate & K_CTRL) {
-		short cmd = C_NONE;
+		short cmd = C_NONE, shift = (kstate & (K_LSHIFT | K_RSHIFT)) != 0;
 		switch (scan) {
-		case 0x31: cmd = C_NEW; break;		/* N */
+		/* the AERA programs' keys (the guidelines, 3.2), with
+		   Mail's on the Mac for the rest: Shift+^N get mail, Shift+^R
+		   reply to all, Shift+^F forward, Shift+^D send; ^K and ^E
+		   as before */
+		case 0x31: cmd = shift ? C_CHECK : C_NEW; break;	/* N */
 		case 0x25: cmd = C_CHECK; break;	/* K */
 		case 0x10: cmd = C_QUIT; break;		/* Q */
-		case 0x13: cmd = C_REPLY; break;	/* R */
+		case 0x11: cmd = C_CLOSE; break;	/* W */
+		case 0x13: cmd = shift ? C_REPLYALL : C_REPLY; break;	/* R */
 		case 0x12: cmd = C_REPLYALL; break;	/* E */
-		case 0x21: cmd = C_FORWARD; break;	/* F */
+		case 0x21: cmd = shift ? C_FORWARD : C_NONE; break;	/* F: Find, one day */
 		case 0x16: cmd = C_UNREAD; break;	/* U */
 		case 0x22: cmd = C_FLAG; break;		/* G */
 		case 0x32: cmd = C_MOVE; break;		/* M */
 		case 0x1e: cmd = C_SELALL; break;	/* A */
-		case 0x1f: cmd = C_SEND; break;		/* S */
+		case 0x20: cmd = shift ? C_SEND : C_NONE; break;	/* D */
+		case 0x1f: cmd = C_SAVEOUT; break;	/* S: into the Outbox */
 		case 0x14: cmd = C_ATTACH; break;	/* T */
 		case 0x30: cmd = C_ABOOK; break;	/* B */
 		}
-		if (cmd == C_SEND || cmd == C_ATTACH || cmd == C_ABOOK) {
+		if (cmd == C_SEND || cmd == C_SAVEOUT || cmd == C_ATTACH || cmd == C_ABOOK) {
 			if (w_editor.h <= 0)
 				return 1;
 		} else if ((cmd == C_REPLY || cmd == C_REPLYALL || cmd == C_FORWARD) && !cur_msg) {
@@ -993,6 +1013,11 @@ int main(void)
 	scr_h = work_out[1] + 1;
 	vq_extnd(vdi_h, 1, work_out);
 	planes = work_out[4];
+	if (!screen_check("EMail", scr_w)) {	/* not in ST low */
+		v_clsvwk(vdi_h);
+		appl_exit();
+		return 1;
+	}
 	vst_alignment(vdi_h, 0, 5);
 	wind_get(0, WF_WORKXYWH, &desk_x, &desk_y, &desk_w, &desk_h);
 	graf_mouse(BUSYBEE, 0);
@@ -1038,8 +1063,7 @@ int main(void)
 	list_load();
 	reader_clear();
 
-	if (crash_previous())
-		alert(1, "[1][EMail crashed last time|(%s).|What happened is in|CRASH.LOG, next to EMAIL.PRG.][ OK ]", crash_previous());
+	crash_offer("EMail", "next to EMAIL.PRG");
 
 	if (!naccts) {
 		alert(1, "[1][Welcome to EMail!||Let's set up your mail account.][ OK ]");

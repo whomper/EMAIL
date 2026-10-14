@@ -45,7 +45,8 @@ Start it. The first time, EMail asks for your account.
 This guide is also in `EMAIL.HYP`, a hypertext: with EHypView, ST-Guide
 or HypView running (as an accessory, or as a program under MultiTOS or
 MagiC), the Help key opens it, from next to `EMAIL.PRG` or from the
-viewer's own help folder. Without a viewer, Help shows the keys.
+viewer's own help folder. Without a viewer, Help says how to get one and
+offers the list of keys instead.
 
 ## Setting up an account
 
@@ -238,9 +239,9 @@ your text...
 - Ctrl+T (Message > Attach file) adds an `Attach:` line; you can also
   type one.
 - Lines wrap at 72 characters as you type (Options > Settings).
-- **Ctrl+S sends now.** Message > Put in Outbox keeps it for later; it
-  goes out with the next Check mail. Closing the window asks whether to
-  keep the message in the Outbox.
+- **Shift+Ctrl+D sends now.** Ctrl+S (Message > Put in Outbox) keeps it
+  for later; it goes out with the next Check mail. Closing the window asks
+  whether to keep the message in the Outbox.
 
 Replies quote the original and keep the thread together (In-Reply-To and
 References). Forwarding a message with attachments attaches the original.
@@ -275,17 +276,22 @@ so those are left out when showing a message.
 
 | Key          | Does                       | Key          | Does                    |
 |--------------|----------------------------|--------------|-------------------------|
-| Ctrl+N       | new message                | Ctrl+K       | check mail              |
-| Ctrl+R       | reply                      | Ctrl+E       | reply to all            |
-| Ctrl+F       | forward                    | Ctrl+U       | mark as unread          |
+| Ctrl+N       | new message                | Shift+Ctrl+N | check mail (or Ctrl+K)  |
+| Ctrl+R       | reply                      | Shift+Ctrl+R | reply to all (or Ctrl+E) |
+| Shift+Ctrl+F | forward                    | Ctrl+U       | mark as unread          |
 | Ctrl+G       | flag / unflag              | Ctrl+M       | move to a folder        |
-| Delete       | delete (to Trash)          | Ctrl+S       | send (in the editor)    |
+| Delete       | delete (to Trash)          | Ctrl+A       | select all messages     |
+| Shift+Ctrl+D | send (in the editor)       | Ctrl+S       | into the Outbox (editor) |
 | Ctrl+T       | attach a file              | Ctrl+B       | address book            |
-| F10          | Hebrew keyboard on/off     | Help         | this guide (or the keys) |
-| Esc          | close the editor           | Ctrl+Q       | quit                    |
-| Tab          | next pane                  | Right button | what you can do there   |
-| Ctrl+A       | select all messages        | Shift+click  | add/remove one message  |
+| F10          | Hebrew keyboard on/off     | Help         | this guide              |
+| Esc          | close the editor           | Ctrl+W       | close the window        |
+| Tab          | next pane                  | Ctrl+Q       | quit                    |
+| Shift+click  | add/remove one message     | Right button | what you can do there   |
 | Control+click| select a range             |              |                         |
+
+The keys are the AERA programs' own (Ctrl+S saves, Ctrl+W closes, Ctrl+F
+will find), with Mail's on the Mac for the rest. Closing the main window
+ends EMail. Without a help viewer, Help offers the list of keys.
 
 **Several messages at once.** Shift+click adds a message to the selection
 (or takes it out), Control+click selects everything from the last message

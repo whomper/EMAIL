@@ -142,7 +142,7 @@ try:
     r.key(K["RETURN"])
     time.sleep(0.5)
     r.shot("n3-reply")
-    r.ctrl("s")                          # send now
+    r.key(rig.SCAN["d"], shift=True, ctrl=True)   # Shift+^D: send now
     wait_log("SMTP -- closed", 300)      # another handshake, for SMTP
     time.sleep(20)                       # the copy in Sent
     r.shot("n4-sent")

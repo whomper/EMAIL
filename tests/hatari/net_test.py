@@ -90,7 +90,7 @@ try:
     r.key(K["RETURN"])
     time.sleep(0.5)
     r.shot("n3-reply")
-    r.ctrl("s")                          # send now
+    r.key(rig.SCAN["d"], shift=True, ctrl=True)   # Shift+^D: send now
     time.sleep(35)
     r.shot("n4-sent")
 

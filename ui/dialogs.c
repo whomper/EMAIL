@@ -1220,16 +1220,17 @@ char *dlg_pick_address(void)
 void dlg_keys(void)
 {
 	static const char *lines[] = {
-		"^N  new message        ^K  check mail",
-		"^R  reply              ^E  reply to all",
-		"^F  forward            ^U  mark as unread",
+		"^N  new message        \x01^N check mail (^K)",
+		"^R  reply              \x01^R reply to all",
+		"\x01^F forward            ^U  mark as unread",
 		"^G  flag / unflag      ^M  move to a folder",
 		"Del delete             ^A  select all",
 		"Shift+click   add or remove one message",
 		"Control+click select a range of messages",
 		"Tab next pane          F10 Hebrew keyboard",
-		"In the editor: ^S send  ^T attach  ^B addresses",
-		"^Q  quit"
+		"In the editor: \x01^D send  ^S into the Outbox",
+		"               ^T attach  ^B addresses",
+		"^W  close the window   ^Q  quit"
 	};
 	short i, n = (short)(sizeof(lines) / sizeof(lines[0]));
 	d_begin(52, n + 6);

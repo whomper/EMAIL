@@ -980,6 +980,9 @@ static void main_message(short *msg)
 	case WM_CLOSED:
 		main_closed();
 		break;
+	case WM_BOTTOMED:
+		wind_set(main_h, WF_BOTTOM, 0, 0, 0, 0);
+		break;
 	case WM_FULLED: {
 		GRECT c, f, p;
 		wind_get(main_h, WF_CURRXYWH, &c.x, &c.y, &c.w, &c.h);
@@ -1048,6 +1051,9 @@ void win_message(short *msg)
 		else
 			win_close(w);
 		menu_update();
+		break;
+	case WM_BOTTOMED:
+		wind_set(w->h, WF_BOTTOM, 0, 0, 0, 0);
 		break;
 	case WM_FULLED: {
 		GRECT c, f, p;

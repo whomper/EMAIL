@@ -142,7 +142,7 @@ short  d_button(short x, short y, short w, const char *s, short flags);
 short  d_check(short x, short y, const char *s, short on);
 void   d_end(void);
 OBJECT *d_tree(void);
-short alert(short def, const char *fmt, ...);
+#include "alert.h"		/* alert(): common/ui */
 void dlg_keys(void);			/* Help: the keys */
 
 /* menu commands (main.c) */

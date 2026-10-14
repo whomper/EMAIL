@@ -1051,7 +1051,7 @@ int main(void)
 {
 	short work_in_dummy, work_out[57], msg[8], d;
 	char dir[200];
-	EVENT ev;
+	AEVENT ev;
 
 	{
 		extern int mem_unaligned_ok;

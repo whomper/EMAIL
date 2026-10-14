@@ -162,7 +162,7 @@ void dlg_about(void)
 	short m[8], clipr[4], y, done = 0, i, online = 0;
 	short saved_rgb[8][3], colour = planes >= 4;
 	short bw = 10 * cw, bh = ch + 6, by;
-	EVENT e;
+	AEVENT e;
 
 	for (i = 0; i < naccts; i++)
 		if (accts[i]->im)

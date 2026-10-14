@@ -133,6 +133,9 @@ int  editor_dirty(void);
 void editor_send(int now);
 void editor_attach(void);
 void editor_attach_file(const char *path);
+void editor_clip(int what);			/* CLIP_COPY, CLIP_CUT, CLIP_PASTE */
+void editor_insert_text(const char *s);		/* at the cursor */
+void editor_insert_body(const char *s);		/* at the start of the message's text */
 void editor_insert_address(void);
 char *dlg_pick_address(void);
 
@@ -159,7 +162,8 @@ void dlg_keys(void);			/* Help: the keys */
 enum {
 	C_NONE, C_ABOUT,
 	C_NEW, C_CHECK, C_SENDQ, C_SAVEATT, C_CLOSE, C_QUIT,
-	C_REPLY, C_REPLYALL, C_FORWARD, C_UNREAD, C_MARKREAD, C_FLAG, C_MOVE, C_DELETE, C_SELALL,
+	C_CUT, C_COPY, C_PASTE, C_SELALL,
+	C_REPLY, C_REPLYALL, C_FORWARD, C_UNREAD, C_MARKREAD, C_FLAG, C_MOVE, C_DELETE,
 	C_SEND, C_SAVEOUT, C_ATTACH, C_ABOOK,
 	C_FOLDERS, C_REFRESH, C_NEWFOLDER, C_RENFOLDER, C_DELFOLDER,
 	C_ACCOUNTS, C_SETTINGS, C_FONT, C_OFFLINE, C_FALCON, C_HEBREW, C_LOG

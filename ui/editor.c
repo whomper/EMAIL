@@ -15,6 +15,7 @@
 #include "../src/compose.h"
 #include "bidi.h"
 #include "util.h"
+#include "clip.h"
 
 typedef struct {
 	char *s;
@@ -346,6 +347,99 @@ static void split_line(void)
 	cx = 0;
 	changed(cy - 1, -1);
 	win_ensure_visible(&w_editor, cy);
+}
+
+/* where a header line's value starts: after "To: " */
+static short value_at(long line)
+{
+	ELINE *l = &ln[line];
+	short i;
+	if (in_body(line))
+		return 0;
+	for (i = 0; i < l->n && l->s[i] != ':'; i++)
+		;
+	if (i == l->n)
+		return 0;			/* no name: all of it */
+	for (i++; i < l->n && l->s[i] == ' '; i++)
+		;
+	return i;
+}
+
+/* text at the cursor, lines ending '\n', all at once and drawn once (a
+   header line takes the first line only); what doesn't fit is left out */
+void editor_insert_text(const char *s)
+{
+	long from = cy;
+	int body = in_body(cy);
+	if (w_editor.h <= 0 || !nl)
+		return;
+	for (; *s; s++) {
+		ELINE *l = &ln[cy];
+		if (*s == '\n') {
+			if (!body || !ins_line(cy + 1, ln[cy].s + cx, ln[cy].n - cx))
+				break;
+			l = &ln[cy];
+			l->n = cx;
+			l->s[cx] = 0;
+			cy++;
+			cx = 0;
+			continue;
+		}
+		if ((unsigned char)*s < 32 && *s != '\t')
+			continue;
+		if (!grow_line(l, l->n + 1))
+			break;
+		memmove(l->s + cx + 1, l->s + cx, l->n - cx + 1);
+		l->s[cx++] = *s == '\t' ? ' ' : *s;
+		l->n++;
+	}
+	changed(from, -1);
+	win_ensure_visible(&w_editor, cy);
+}
+
+void editor_insert_body(const char *s)
+{
+	long he = header_end();
+	if (w_editor.h <= 0 || he < 0)
+		return;
+	if (he + 1 >= nl && !ins_line(nl, "", 0))
+		return;
+	cy = he + 1;
+	cx = 0;
+	editor_insert_text(s);
+}
+
+/* ^C ^X ^V: with nothing selected, the line the cursor is in (a header
+   line's value, after "To: ") */
+void editor_clip(int what)
+{
+	char buf[2048];
+	ELINE *l;
+	short v;
+	if (w_editor.h <= 0 || !nl)
+		return;
+	if (what == CLIP_PASTE) {
+		if (clip_get(buf, sizeof(buf)))
+			editor_insert_text(in_body(cy) ? buf : clip_line(buf));
+		return;
+	}
+	l = &ln[cy];
+	v = value_at(cy);
+	if (!clip_put(l->s + v, l->n - v) || what != CLIP_CUT)
+		return;
+	if (v || !in_body(cy) || nl - 1 <= header_end() + 1) {
+		/* a header keeps its name; the only body line stays, empty */
+		l->n = v;
+		l->s[v] = 0;
+		cx = v;
+		changed(cy, 1);
+	} else {
+		del_line(cy);
+		if (cy >= nl)
+			cy = nl - 1;
+		cx = 0;
+		changed(cy, -1);
+	}
 }
 
 static void join_next(long line)

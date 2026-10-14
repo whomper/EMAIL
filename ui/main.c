@@ -18,6 +18,8 @@
 #include "crash.h"
 #include "help.h"
 #include "av.h"
+#include "clip.h"
+#include "dd.h"
 #include "aboutbox.h"
 #include "mbar.h"
 #include "../src/version.h"
@@ -75,12 +77,19 @@ static const MBAR_ITEM m_msg[] = {
 	{ "Flag", "^G", C_FLAG },
 	{ "Move to...", "^M", C_MOVE },
 	{ "Delete", "Del", C_DELETE },
-	{ "Select all", "^A", C_SELALL },
 	{ "-", 0, 0 },
 	{ "Send now", "\x01^D", C_SEND },
 	{ "Put in Outbox", "^S", C_SAVEOUT },
 	{ "Attach file...", "^T", C_ATTACH },
 	{ "Address book...", "^B", C_ABOOK },
+	{ 0, 0, 0 }
+};
+static const MBAR_ITEM m_edit[] = {
+	{ "Cut", "^X", C_CUT },
+	{ "Copy", "^C", C_COPY },
+	{ "Paste", "^V", C_PASTE },
+	{ "-", 0, 0 },
+	{ "Select all", "^A", C_SELALL },
 	{ 0, 0, 0 }
 };
 static const MBAR_ITEM m_fold[] = {
@@ -106,6 +115,7 @@ static const MBAR_ITEM m_opts[] = {
 static const MBAR_TITLE bar[] = {
 	{ " EMail ", m_desk },
 	{ " File ", m_file },
+	{ " Edit ", m_edit },
 	{ " Message ", m_msg },
 	{ " Folder ", m_fold },
 	{ " Options ", m_opts },
@@ -123,8 +133,11 @@ static void enable(short cmd, int on)
 
 void menu_update(void)
 {
-	int msg = cur_msg != 0, ed = w_editor.h > 0;
+	int msg = cur_msg != 0, ed = w_editor.h > 0, ed_top = ed && win_topmost() == &w_editor;
 	int some = msg || list_marked() > 1;	/* one message or a selection */
+	enable(C_CUT, ed_top);
+	enable(C_COPY, ed_top || msg || (win_topmost() == &w_folders && cur_finfo));
+	enable(C_PASTE, ed_top);
 	enable(C_REPLY, msg);
 	enable(C_REPLYALL, msg);
 	enable(C_FORWARD, msg);
@@ -703,10 +716,68 @@ void ui_command(short cmd)
 	command(cmd);
 }
 
+/* the message shown, as text: its header lines, then what it says */
+static void copy_message(void)
+{
+	MSG *m = cur_msg;
+	char *t;
+	long n;
+	if (!m)
+		return;
+	n = 200 + (long)strlen(m->from ? m->from : "") + (long)strlen(m->to ? m->to : "") +
+	    (long)strlen(m->cc ? m->cc : "") + (long)strlen(m->subject ? m->subject : "") + m->textlen;
+	if (!(t = malloc(n))) {
+		alert(1, "[1][Not enough memory to copy|this message.][ OK ]");
+		return;
+	}
+	snprintf(t, n, "From: %s\nTo: %s\n%s%s%sDate: %s\nSubject: %s\n\n",
+		 m->from ? m->from : "", m->to ? m->to : "",
+		 m->cc && *m->cc ? "Cc: " : "", m->cc && *m->cc ? m->cc : "", m->cc && *m->cc ? "\n" : "",
+		 m->date ? m->date : "", m->subject ? m->subject : "");
+	if (m->text)
+		memcpy(t + strlen(t), m->text, m->textlen + 1);
+	main_status(clip_put(t, (long)strlen(t)) ? "Copied to the clipboard." : "Couldn't write the clipboard.");
+	free(t);
+}
+
+/* ^C ^X ^V: in the message being written (the line the cursor is in when
+   nothing is chosen); else ^C copies the message shown, or the folder's
+   name when the folder list has the keyboard */
+static void clip_command(short cmd)
+{
+	WIN *top = win_topmost();
+	int what = cmd == C_COPY ? CLIP_COPY : cmd == C_CUT ? CLIP_CUT : CLIP_PASTE;
+	if (top == &w_editor) {
+		editor_clip(what);
+	} else if (what == CLIP_COPY && top == &w_folders && cur_finfo) {
+		if (clip_put(cur_finfo->disp, (long)strlen(cur_finfo->disp)))
+			main_status("Copied to the clipboard.");
+	} else if (what == CLIP_COPY) {
+		copy_message();
+	}
+}
+
+/* text dropped (drag and drop): into the message being written at the
+   cursor, else a new message with it */
+static void drop_text(const char *s)
+{
+	ACCOUNT *a;
+	if (w_editor.h > 0) {
+		win_top(&w_editor);
+		editor_insert_text(s);
+	} else if ((a = account_for_new()) != 0) {
+		editor_open(a, compose_new(a, ""), 0, 0);
+		editor_insert_body(s);
+	}
+}
+
 static void command(short cmd)
 {
 	switch (cmd) {
 	case C_ABOUT: dlg_about(); break;
+	case C_CUT:
+	case C_COPY:
+	case C_PASTE: clip_command(cmd); break;
 	case C_NEW: {
 		ACCOUNT *a = account_for_new();
 		if (a)
@@ -889,6 +960,9 @@ static int shortcut(short kstate, short key)
 		case 0x22: cmd = C_FLAG; break;		/* G */
 		case 0x32: cmd = C_MOVE; break;		/* M */
 		case 0x1e: cmd = C_SELALL; break;	/* A */
+		case 0x2e: cmd = C_COPY; break;		/* C */
+		case 0x2d: cmd = C_CUT; break;		/* X */
+		case 0x2f: cmd = C_PASTE; break;	/* V */
 		case 0x20: cmd = shift ? C_SEND : C_NONE; break;	/* D */
 		case 0x1f: cmd = C_SAVEOUT; break;	/* S: into the Outbox */
 		case 0x14: cmd = C_ATTACH; break;	/* T */
@@ -1098,11 +1172,19 @@ int main(void)
 			case AP_TERM:
 				quit = 1;
 				break;
-			default:
-				if (av_message(msg, &va) == AV_START)
-					av_start(va);
-				else
-					win_message(msg);
+			default: {
+				DROP d;
+				switch (dd_message(msg, DD_WANT_FILES | DD_WANT_TEXT, &d)) {
+				case DD_FILES: av_start(d.data); break;	/* as VA_START's */
+				case DD_TEXT: drop_text(d.data); break;
+				case DD_NONE:
+					if (av_message(msg, &va) == AV_START)
+						av_start(va);
+					else
+						win_message(msg);
+				}
+				dd_done(&d);
+			}
 			}
 		}
 		if ((which & MU_KEYBD) && win_icon_on_top())

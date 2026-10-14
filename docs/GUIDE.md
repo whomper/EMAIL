@@ -261,6 +261,27 @@ jinnee or Gemini, can do the same with the AV protocol's VA_START:
   text when it has them;
 - files are attached to the message being written, or to a new one.
 
+Under MultiTOS, MagiC or XaAES you can also drag files onto EMail's
+windows to attach them, or drag text from another program: it goes into
+the message being written at the cursor, or starts a new message.
+
+## Copy and paste
+
+Edit > Cut, Copy and Paste (^X, ^C, ^V) use the GEM clipboard, which
+other programs share:
+
+- **In the message being written,** ^V puts the clipboard's text in at the
+  cursor. With nothing selected, ^C copies the line the cursor is in and
+  ^X cuts it; on a To:, Cc: or Subject: line only what comes after the
+  name. EContact puts an address on the clipboard when EMail isn't
+  running: paste it into the To: line.
+- **In the main window,** ^C copies the message shown (its From, To,
+  Date and Subject lines, then the text), or the folder's name when the
+  folder list has the keyboard.
+- **In dialogs,** ^C copies a field, ^X cuts it and ^V pastes into it.
+  Nothing is ever copied out of a password field, but you can paste one
+  in.
+
 ## Hebrew
 
 EMail shows Hebrew mail in UTF-8, ISO-8859-8 or windows-1255, Hebrew
@@ -285,6 +306,8 @@ so those are left out when showing a message.
 | Ctrl+R       | reply                      | Shift+Ctrl+R | reply to all (or Ctrl+E) |
 | Shift+Ctrl+F | forward                    | Ctrl+U       | mark as unread          |
 | Ctrl+G       | flag / unflag              | Ctrl+M       | move to a folder        |
+| Ctrl+C       | copy                       | Ctrl+X       | cut                     |
+| Ctrl+V       | paste                      |              |                         |
 | Delete       | delete (to Trash)          | Ctrl+A       | select all messages     |
 | Shift+Ctrl+D | send (in the editor)       | Ctrl+S       | into the Outbox (editor) |
 | Ctrl+T       | attach a file              | Ctrl+B       | address book            |
@@ -300,7 +323,7 @@ ends EMail. Without a help viewer, Help offers the list of keys.
 
 **Several messages at once.** Shift+click adds a message to the selection
 (or takes it out), Control+click selects everything from the last message
-you clicked, and Ctrl+A (Message > Select all) the whole list. The message
+you clicked, and Ctrl+A (Edit > Select all) the whole list. The message
 pane then says how many are selected; Mark as read, Mark as unread, Flag,
 Move to and Delete (from the Message menu, the keys or a right-click on the
 selection) work on all of them. A plain click selects one message again.

@@ -126,9 +126,9 @@ try:
     r.move(630, 470)                     # the pointer out of the picture's way
     time.sleep(1)
     r.shot("s1-read")
-    r.click(292, 8)                      # Options
+    r.click(340, 8)                      # Options
     time.sleep(0.5)
-    r.click(300, 40)                     # Settings...
+    r.click(348, 40)                     # Settings...
     time.sleep(3)
     r.click(150, 281)                    # Connection
     time.sleep(2)

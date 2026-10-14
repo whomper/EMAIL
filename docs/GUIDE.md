@@ -36,6 +36,7 @@ C:\EMAIL\CRASH.LOG      what happened, if EMail ever crashes
 C:\EMAIL\CACERT.PEM    root certificates, for Falcon mode only
 C:\EMAIL\ROOTS.DAT     the same, decoded ahead of time (Falcon mode only)
 C:\EMAIL\EMAIL.HYP     this guide for ST-Guide (the Help key opens it)
+C:\EMAIL\EMAIL.REF     its page names, for ST-Guide's reference list (optional)
 C:\EMAIL\EMAIL\         your mail: one folder per account, one per mailbox
 ```
 

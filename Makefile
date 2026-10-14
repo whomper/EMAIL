@@ -123,11 +123,12 @@ itest: $(OBJDIR)/mail-cli
 
 # the ST-Guide help file from the user guide (HCP from github.com/th-otto/hypview)
 HCP ?= hcp
+# (and EMAIL.REF, its page names for ST-Guide's reference list)
 help: binary/EMAIL.HYP
 binary/EMAIL.HYP: docs/GUIDE.md tools/mkhelp.py VERSION
 	@mkdir -p $(OBJDIR)
 	python3 tools/mkhelp.py docs/GUIDE.md VERSION $(OBJDIR)/EMAIL.STG
-	$(HCP) -q -o $@ $(OBJDIR)/EMAIL.STG
+	$(HCP) --references -o $@ $(OBJDIR)/EMAIL.STG >/dev/null
 
 clean:
 	rm -rf $(OBJDIR) binary/EMAIL.PRG binary/ROOTS.DAT

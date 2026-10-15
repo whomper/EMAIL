@@ -22,7 +22,9 @@ reads and writes Hebrew.
 
 ## Installing
 
-The files are in the `binary` folder of EMail's GitHub page. Copy
+The files are in the latest release on EMail's GitHub page
+(github.com/whomper/EMail/releases), each on its own and all together in
+`EMAIL-x.y.zip`. Copy
 `EMAIL.PRG` into a folder of its own, for example `C:\EMAIL\`. EMail
 keeps everything next to itself:
 
@@ -89,8 +91,8 @@ Falcon mode needs:
 
 - a 68030 (Falcon, or TT without the DSP part); a 68000 ST is too slow
 - 4 MB of memory or more (1 MB is not enough for TLS next to your mail)
-- `CACERT.PEM` and `ROOTS.DAT` next to `EMAIL.PRG`, both from the
-  `binary` folder of EMail's GitHub page. CACERT.PEM holds the root certificates EMail trusts (the
+- `CACERT.PEM` and `ROOTS.DAT` next to `EMAIL.PRG`, both in the
+  release. CACERT.PEM holds the root certificates EMail trusts (the
   Mozilla list); ROOTS.DAT is the same list already decoded, which saves
   over a minute on the first connection. If you replace CACERT.PEM with a
   newer one (from [curl.se/docs/caextract.html](https://curl.se/docs/caextract.html)),
@@ -404,7 +406,7 @@ Refresh folder list reads it again after you changed it elsewhere.
 
 ## The desktop icon
 
-`binary/icons/` has EMail's icon for the desktop: `EMAIL.RSC` holds a black and
+The release has EMail's icon for the desktop (in the zip, in `icons/`): `EMAIL.RSC` holds a black and
 white and a 16-colour version to copy into `DESKICON.RSC` /
 `DESKCICN.RSC` with a resource editor, and `EMAIL.ICN` / `EMAILMK.ICN` are
 the image and mask for icon editors. For EmuTOS,

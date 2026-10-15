@@ -9,6 +9,12 @@
 #   make test       builds the mail core for this computer and runs the
 #                   unit tests (tests/); `make itest` also runs the
 #                   protocol tests against a local Dovecot.
+#   make help       binary/EMAIL.HYP, the guide for ST-Guide (needs hcp:
+#                   common/tools/build-hcp.sh builds it)
+#   make dist       a release's files in dist/: each file, and EMAIL-x.y.zip
+#
+# binary/ is what make builds, never committed: releases carry the
+# program (.github/workflows/release.yml).
 #
 # The Atari build follows Claude ST (github.com/whomper/ClaudeST). The code
 # EMail shares with the other AERA programs (BearSSL, the DSP RSA, bidi,
@@ -48,23 +54,36 @@ OBJDIR  := build
 OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o $(OBJDIR)/crash_s.o \
            $(addprefix $(OBJDIR)/,$(addsuffix .o,$(CORE) $(ATARI) $(UI)))
 HDRS    := $(wildcard src/*.h atari/*.h atari/include/*.h ui/*.h \
-           common/src/*.h common/atari/*.h common/atari/include/*.h common/dsp/*.h)
+           common/src/*.h common/atari/*.h common/atari/include/*.h common/ui/*.h common/dsp/*.h)
 
+# what goes onto the Atari: binary/ (built, never committed)
 all: binary/EMAIL.PRG binary/ROOTS.DAT
 
-binary/EMAIL.PRG: $(OBJDIR)/mail.elf common/tools/elf2tos.py
+binary/EMAIL.PRG: $(OBJDIR)/mail.elf common/tools/elf2tos.py | binary
 	PRGFLAGS=7 python3 common/tools/elf2tos.py $< $@
 
-# Every build of EMAIL.PRG gets the next version: the minor number in
-# VERSION (major.minor, e.g. 1.6) goes up by one each time the program is
-# linked, for the About box and the User-Agent header. Commit VERSION
-# with the program.
-$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/libbearssl.a common/atari/link.ld
-	v=$$(cat VERSION); v=$${v%%.*}.$$(( $${v#*.} + 1 )); echo $$v > VERSION; \
-	printf 'const char mail_version[] = "%s";\n' $$v > $(OBJDIR)/build.c
-	$(CC) $(CFLAGS) -c -o $(OBJDIR)/build.o $(OBJDIR)/build.c
+# the version: VERSION holds the last release (major.minor, e.g. 1.30),
+# and the build never writes it. A release build (RELEASE=1, as the
+# release workflow makes it) shows it as it is, in the About box and the
+# User-Agent header; any other shows "1.30-dev". tools/bump.py starts a
+# release.
+VERSION_STR := $(shell cat VERSION)$(if $(RELEASE),,-dev)
+
+# written again whenever the string changes, so RELEASE=1 rebuilds it
+$(OBJDIR)/build.c: FORCE | $(OBJDIR)
+	@printf '/* written by the Makefile: do not edit */\nconst char mail_version[] = "%s";\n' "$(VERSION_STR)" > $@.new
+	@if cmp -s $@.new $@; then rm $@.new; else mv $@.new $@; fi
+FORCE:
+$(OBJDIR)/build.o: $(OBJDIR)/build.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/mail.elf: $(OBJS) $(OBJDIR)/build.o $(OBJDIR)/libbearssl.a common/atari/link.ld
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(OBJDIR)/build.o $(OBJDIR)/libbearssl.a -lgcc
-	@echo "EMail $$(cat VERSION)"
+
+# EMail's icon for the desktop: icons/, drawn by tools/icon and
+# committed; a release carries them
+icons:
+	python3 tools/icon/make_rsc.py
 
 $(OBJDIR)/bssl/%.o: $(BSSL)/src/%.c
 	@mkdir -p $(dir $@)
@@ -95,7 +114,7 @@ $(OBJDIR)/crash_s.o: common/atari/crash.S | $(OBJDIR)
 $(OBJDIR)/nf.o: common/atari/nf.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 
-$(OBJDIR):
+$(OBJDIR) binary:
 	mkdir -p $@
 
 # ---- host build: the same mail core, for tests and mail-cli ----
@@ -126,7 +145,7 @@ $(OBJDIR)/mkroots: common/tools/mkroots.c $(HOSTSRC) $(HDRS) $(HOSTLIB) | $(OBJD
 	$(HOSTCC) $(HOSTCFLAGS) -I$(BSSL)/inc -o $@ common/tools/mkroots.c $(HOSTSRC) $(HOSTLIB)
 
 # (Mozilla's list, kept in common/, next to the program)
-binary/CACERT.PEM: common/certs/CACERT.PEM
+binary/CACERT.PEM: common/certs/CACERT.PEM | binary
 	cp $< $@
 binary/ROOTS.DAT: binary/CACERT.PEM $(OBJDIR)/mkroots
 	$(OBJDIR)/mkroots binary/CACERT.PEM $@
@@ -179,12 +198,24 @@ itest: $(OBJDIR)/mail-cli
 HCP ?= hcp
 # (and EMAIL.REF, its page names for ST-Guide's reference list)
 help: binary/EMAIL.HYP
-binary/EMAIL.HYP: docs/GUIDE.md tools/mkhelp.py VERSION
-	@mkdir -p $(OBJDIR)
+binary/EMAIL.HYP: docs/GUIDE.md tools/mkhelp.py VERSION | $(OBJDIR) binary
 	python3 tools/mkhelp.py docs/GUIDE.md VERSION $(OBJDIR)/EMAIL.STG
 	$(HCP) --references -o $@ $(OBJDIR)/EMAIL.STG >/dev/null
 
-clean:
-	rm -rf $(OBJDIR) binary/EMAIL.PRG binary/ROOTS.DAT
+# a release's files: each one in dist/, and all of them in
+# dist/EMAIL-x.y.zip (the icons in icons/), for the release workflow
+DIST    := binary/EMAIL.PRG binary/CACERT.PEM binary/ROOTS.DAT binary/EMAIL.HYP binary/EMAIL.REF
+ICONS   := icons/EMAIL.RSC icons/EMAIL.ICN icons/EMAILMK.ICN
+dist: all help
+	rm -rf dist
+	mkdir -p dist/zip/icons
+	cp $(DIST) $(ICONS) dist/
+	cp $(DIST) dist/zip/
+	cp $(ICONS) dist/zip/icons/
+	cd dist/zip && zip -q -9 -r ../EMAIL-$(VERSION_STR).zip .
+	rm -rf dist/zip
 
-.PHONY: help all test itest clean fuzz
+clean:
+	rm -rf $(OBJDIR) binary dist
+
+.PHONY: help all icons dist test itest clean fuzz FORCE

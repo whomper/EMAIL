@@ -77,7 +77,7 @@ on:             Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) --STinG/MiNTnet--TLS
 - **On**, on a Falcon or TT with 4 MB or more (TT RAM helps): EMail does TLS 1.2 itself
   with [BearSSL](https://bearssl.org/) (common/third_party/bearssl), built for
   the 68030, and the Falcon's DSP56001 checks the servers' RSA
-  signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in `binary/`)
+  signatures. It needs `CACERT.PEM` and `ROOTS.DAT` (in the release)
   next to EMAIL.PRG. See [Falcon mode](docs/GUIDE.md#falcon-mode).
 
 EMail follows the design of Troll, the GFA-BASIC newsreader and mail
@@ -116,9 +116,11 @@ the 16 MHz ones in cycle-exact emulation; details in
 
 ## Getting started
 
-Everything to copy to the Atari is in [`binary/`](binary): `EMAIL.PRG`,
-`CACERT.PEM` and `ROOTS.DAT` (Falcon mode), `EMAIL.HYP` (the user guide for
-ST-Guide, opened by the Help key), and the desktop icon in `binary/icons/`.
+Everything to copy to the Atari is in each [release](https://github.com/whomper/EMail/releases/latest), each file
+on its own and all together in `EMAIL-x.y.zip`: `EMAIL.PRG`, `CACERT.PEM`
+and `ROOTS.DAT` (Falcon mode), `EMAIL.HYP` and `EMAIL.REF` (the user guide
+for ST-Guide, opened by the Help key), and the desktop icon (`EMAIL.RSC`,
+`EMAIL.ICN`, `EMAILMK.ICN`; in the zip's `icons/` folder).
 
 1. Copy `EMAIL.PRG` into a folder of its own on your Atari, e.g. `C:\EMAIL\`.
 2. Set up the gateway on a Raspberry Pi: `sudo gateway/install.sh
@@ -137,17 +139,27 @@ The [user guide](docs/GUIDE.md) describes everything else.
 ```
 sudo apt install gcc-m68k-linux-gnu      # Debian/Ubuntu
 make                                     # writes binary/EMAIL.PRG and binary/ROOTS.DAT
+make help HCP=/path/to/hcp               # binary/EMAIL.HYP
+make dist                                # a release's files in dist/
 ```
-
-Every build of EMAIL.PRG gets the next version: the Makefile counts up the
-minor number in `VERSION` (major.minor, e.g. 1.6) each time it links the
-program; it shows in the About box and the User-Agent header. Commit
-`VERSION` together with the program.
 
 The ST-Guide help file `binary/EMAIL.HYP` is made from `docs/GUIDE.md`
 by `tools/mkhelp.py` and the HCP compiler from the
-[hypview](https://github.com/th-otto/hypview) project:
-`make help HCP=/path/to/hcp`.
+[hypview](https://github.com/th-otto/hypview) project
+(`common/tools/build-hcp.sh DIR` builds it). `binary/` and `dist/` are
+what make builds; they are never committed.
+
+**Versions and releases.** `VERSION` holds the last release, major.minor
+(e.g. 1.30), and the build never changes it. A release build
+(`RELEASE=1`) shows it as it is in the About box and the User-Agent
+header; any other build shows `1.30-dev`. To release: `tools/bump.py`,
+commit and push, then run the Release workflow (Actions > Release > Run
+workflow, on main) with what is new:
+[`.github/workflows/release.yml`](.github/workflows/release.yml) tags the
+commit `v1.31`, tests, builds the program and the help file, and
+publishes them as a GitHub Release with those notes. Pushing a tag
+`v1.31` made with `git tag -a` does the same, with the tag's message as
+the notes.
 
 No MiNTLib is needed: the program is freestanding (`atari/`) and
 `common/tools/elf2tos.py` writes the TOS executable. It is built for the 68000,
@@ -169,9 +181,9 @@ common/  code shared with the other AERA programs (from AERA-Atari):
 ui/      the GEM program: windows, drawing, editor, dialogs, menus
 gateway/ the Raspberry Pi gateway (emailgate.py, install.sh)
 tests/   unit and integration tests, the Hatari test rig
-tools/   the icon generator, sync-common.sh, FAKESTNG.PRG (for testing in Hatari only)
-binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT, EMAIL.HYP,
-         and the desktop icon (icons/, RSC and ICN files)
+tools/   the icon generator, sync-common.sh, bump.py, FAKESTNG.PRG (for testing in Hatari only)
+icons/   the desktop icon (RSC and ICN files), from tools/icon
+binary/  what make builds for the Atari (not committed: the releases have it)
 ```
 
 ## Tests

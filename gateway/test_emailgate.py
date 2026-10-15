@@ -106,14 +106,17 @@ class GateTest(unittest.TestCase):
         cls.imap = Server(imaps)
         cls.smtp = Server(smtp587)
         cls.bad = Server(untrusted)
-        closed = socket.create_server(("127.0.0.1", 0))
-        cls.closed_port = closed.getsockname()[1]
-        closed.close()
+        # bound but never listening: connections are refused, and while the
+        # tests run no other socket can be given the port, neither a gate on
+        # port 0 nor a connection as its own source port (it would reach itself)
+        cls.closed = socket.socket()
+        cls.closed.bind(("127.0.0.1", 0))
+        cls.closed_port = cls.closed.getsockname()[1]
         cls.gates = []
 
     @classmethod
     def tearDownClass(cls):
-        for s in (cls.imap, cls.smtp, cls.bad):
+        for s in (cls.imap, cls.smtp, cls.bad, cls.closed):
             s.close()
         for g in cls.gates:
             g.close()

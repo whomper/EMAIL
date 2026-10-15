@@ -40,10 +40,11 @@ one is there on its own, and all of them together in `EMAIL-x.y.zip`.
 
 1. Copy `EMAIL.PRG` into a folder of its own on your Atari, e.g. `C:\EMAIL\`, with `EMAIL.HYP` and
    `EMAIL.REF` beside it.
-2. Set up the gateway on a Raspberry Pi, in a clone of this repository:
-   `sudo gateway/install.sh imap.gmail.com smtp.gmail.com`, with your provider's servers (see
-   [gateway/README.md](gateway/README.md)).
-3. Start EMail and fill in your account: the Pi's IP address (`install.sh` prints it), ports 143 (IMAP)
+2. Set up the gateway on a Raspberry Pi, in a clone of this repository (or of
+   [AERA-Gateway](https://github.com/whomper/AERA-Gateway)):
+   `sudo gateway/aera-gateway install mail imap.gmail.com smtp.gmail.com`, with your provider's
+   servers (see [gateway/README.md](gateway/README.md)).
+3. Start EMail and fill in your account: the Pi's IP address (`aera-gateway` prints it), ports 143 (IMAP)
    and 587 (SMTP), and your login (Gmail, iCloud and Yahoo need an app password).
 4. Press **Help** in EMail for the [user guide](docs/GUIDE.md); it describes everything else.
 
@@ -66,7 +67,7 @@ On (Falcon, TT):  Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) ------------------
 ```
 
 - **Off** (the default), on any Atari: a Raspberry Pi on your network does the encryption.
-  `gateway/emailgate.py` is standard Python, set up as a service by `gateway/install.sh`. A server that
+  `gateway/emailgate.py` is standard Python, set up as a service by `gateway/aera-gateway`. A server that
   accepts plain connections can be used directly.
 - **On**, on a Falcon or TT with 4 MB or more (TT RAM helps): EMail does TLS 1.2 itself with
   [BearSSL](https://bearssl.org/) (`common/third_party/bearssl`), built for the 68030, and the Falcon's
@@ -170,9 +171,10 @@ common/   code shared with the other AERA programs, from AERA-Atari: the TOS run
           GEM building blocks (menus, alerts, the About box, help, iconify, clipboard, drag and
           drop), BearSSL, the DSP RSA program, Mozilla's root certificates, build tools.
           Change it in AERA-Atari, then run tools/sync-common.sh
-gateway/  the Raspberry Pi gateway (emailgate.py, install.sh, its tests)
+gateway/  the Raspberry Pi gateways (emailgate.py is EMail's) and aera-gateway, their installer:
+          a copy of AERA-Gateway's; change it there, then run tools/sync-gateway.sh
 tests/    unit, fuzz and integration tests, the Hatari rigs (tests/hatari)
-tools/    the icon generator, sync-common.sh, bump.py, the TLS measurements (tlsbench),
+tools/    the icon generator, sync-common.sh, sync-gateway.sh, bump.py, the TLS measurements (tlsbench),
           FAKESTNG.PRG (for testing in Hatari only)
 icons/    the desktop icon (RSC and ICN files), from tools/icon
 docs/     the user guide (GUIDE.md, the source of EMAIL.HYP) and the pictures

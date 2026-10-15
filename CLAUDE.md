@@ -53,9 +53,13 @@ These come from AERA-Atari's repo template and are the same in every app's CLAUD
   `make` with no warnings. When the GEM side changes,
   `tests/hatari/net_test.py` and `tests/hatari/stop_test.py` in Hatari
   with EmuTOS.
-- `gateway/emailgate.py` is standard Python, installed by
-  `gateway/install.sh`; keep it that way. Its log names who connected
-  where, never what went through.
+- `gateway/` is a read-only copy of
+  [AERA-Gateway](https://github.com/whomper/AERA-Gateway)'s (emailgate,
+  the other gateways, `aera-gateway`): change it there, with that
+  repository's owner session, and bring it here with
+  `tools/sync-gateway.sh`. EMail decides emailgate's protocol (STARTTLS,
+  the "emailgate:" refusal lines, ports 143/587/110): review changes to
+  it there. Its log names who connected where, never what went through.
 - EContact's `integration/EMAIL.patch` makes EContact EMail's address
   book: when EMail changes, make that patch again in EContact (see its
   CLAUDE.md) and check it still applies and builds.

@@ -46,9 +46,10 @@ Start it. The first time, EMail asks for your account.
 
 This guide is also in `EMAIL.HYP`, a hypertext: with EHypView, ST-Guide
 or HypView running (as an accessory, or as a program under MultiTOS or
-MagiC), the Help key opens it, from next to `EMAIL.PRG` or from the
-viewer's own help folder. Without a viewer, Help says how to get one and
-offers the list of keys instead.
+MagiC), the Help key or **Help > EMail help** opens it, from next to
+`EMAIL.PRG` or from the viewer's own help folder. Without a viewer, Help
+says how to get one and offers the list of keys instead; **Help > Keys**
+shows that list at any time.
 
 ## Setting up an account
 

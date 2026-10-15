@@ -113,6 +113,11 @@ static const MBAR_ITEM m_opts[] = {
 	{ "Protocol log", 0, C_LOG },
 	{ 0, 0, 0 }
 };
+static const MBAR_ITEM m_help[] = {
+	{ "EMail help", "Help", C_HELP },
+	{ "Keys...", 0, C_KEYS },
+	{ 0, 0, 0 }
+};
 
 static const MBAR_TITLE bar[] = {
 	{ " EMail ", m_desk },
@@ -121,6 +126,7 @@ static const MBAR_TITLE bar[] = {
 	{ " Message ", m_msg },
 	{ " Folder ", m_fold },
 	{ " Options ", m_opts },
+	{ " Help ", m_help },
 	{ 0, 0 }
 };
 
@@ -780,6 +786,8 @@ static void command(short cmd)
 {
 	switch (cmd) {
 	case C_ABOUT: dlg_about(); break;
+	case C_HELP: help_key_pressed(); break;
+	case C_KEYS: dlg_keys(); break;
 	case C_CUT:
 	case C_COPY:
 	case C_PASTE: clip_command(cmd); break;

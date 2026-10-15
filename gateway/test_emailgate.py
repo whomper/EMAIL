@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """emailgate.py on this computer: an "Atari" talks plain to the gateway,
 which talks TLS to servers made here with a certificate made here (and
 trusted through SSL_CERT_FILE, as the Pi trusts the system's roots).

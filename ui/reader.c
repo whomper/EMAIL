@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * reader.c - the message window: headers, attachments (click one to
  * save it) and the text, word-wrapped to the window. Hebrew paragraphs

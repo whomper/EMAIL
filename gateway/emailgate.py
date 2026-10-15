@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """emailgate - the Raspberry Pi mail gateway for EMail on the Atari.
 
 Mail providers take only encrypted connections (TLS), and a 16 MHz Falcon

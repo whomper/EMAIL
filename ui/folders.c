@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * folders.c - the folders window: every account with its folders and
  * unread counts (the GFA Troll's "groups" window). Clicking a folder opens it

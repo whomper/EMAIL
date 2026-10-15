@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """Writes tests/fuzz/seeds/: the starting inputs for make fuzz, sessions as
 mail servers answer them, and messages. For fuzz_imap and fuzz_smtp the
 first byte picks what is asked (see the targets); the rest is what the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """Esc stops the network (the AERA guidelines, 7.1): EMAIL.PRG checks its
 mail at start on an IMAP "server" that takes the connection and never
 says a word. Esc while the busy bee shows must end the wait at once, not

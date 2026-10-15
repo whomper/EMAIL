@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * editor.c - the compose window: a plain-text editor holding the
  * header lines (To, Cc, Bcc, Subject, Attach) above the body. Lines are

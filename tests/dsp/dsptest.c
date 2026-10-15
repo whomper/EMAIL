@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * DSPTEST - checks EMail's RSA on the DSP56001 (dsp/rsa.a56 through
  * atari/dsprsa.c) against answers worked out in Python, and times it.

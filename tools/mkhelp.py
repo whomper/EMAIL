@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """Turn docs/GUIDE.md into an ST-Guide hypertext source (EMAIL.STG).
 
     mkhelp.py docs/GUIDE.md VERSION build/EMAIL.STG
@@ -158,7 +158,7 @@ def main():
     anchors = {slug(t): t for t, _ in sections[1:]}
     out = ['@database "EMail - e-mail for the Atari"',
            '@subject "Communication"',
-           '@author "Erez Yaary"',
+           '@author "AERA | Erez Yaary"',
            '@$VER: EMAIL.HYP %s (%s)' % (version, time.strftime("%d.%m.%Y")),
            "@width %d" % WIDTH,
            "@inputenc atarist",

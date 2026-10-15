@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """An IMAP proxy for the integration tests that behaves like a server
 dropping the connection on RENAME: it passes everything through to the
 real server and, half a second after a RENAME, closes the connection

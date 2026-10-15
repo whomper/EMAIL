@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2026 Erez Yaary
+# Copyright (C) 2026 AERA | Erez Yaary
 """Screenshots of EMail in colour, on an emulated Falcon (16 colours).
 
 Like select_test.py, with a flagged message full of quoted text: the

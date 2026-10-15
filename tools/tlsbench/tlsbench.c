@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * TLSBENCH - how long the pieces of a TLS handshake take on this Atari.
  * BearSSL 0.6, built for the 68030. Prints the times and writes

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Copyright (C) 2026 Erez Yaary */
+ * Copyright (C) 2026 AERA | Erez Yaary */
 /*
  * theme.h - EMail's colours: a few, for meaning (selection, unread
  * counts, flags, quoted text), as modern mail programs use them. With 256

@@ -142,8 +142,7 @@ builds it).
 
 **Versions and releases.** `binary/` and `dist/` are what make builds; they are never committed, and a
 build changes no tracked file. `VERSION` holds the last release, major.minor (e.g. 1.30), and the build
-never changes it. A release build (`RELEASE=1`) shows it as it is in the About box and the User-Agent
-header; any other build shows `1.30-dev`. To release: `tools/bump.py`, commit and push, then
+never changes it. Every build shows it as it is, in the About box and the User-Agent header. To release: `tools/bump.py`, commit and push, then
 **Actions > Release > Run workflow** on `main` with what is new:
 [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the commit `v1.31`, tests, builds
 the program and the help file, and publishes the files and the zip as a GitHub Release with those

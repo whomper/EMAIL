@@ -67,7 +67,7 @@ Mail providers want encrypted connections. EMail reaches them one of two
 ways, switched with Options > Falcon mode:
 
 ```
-off (default):  Atari (EMAIL.PRG) --STinG/MiNTnet--> Raspberry Pi (stunnel) --TLS--> provider
+off (default):  Atari (EMAIL.PRG) --STinG/MiNTnet--> Raspberry Pi (emailgate) --TLS--> provider
 on:             Falcon (EMAIL.PRG, TLS 1.2, RSA on the DSP) --STinG/MiNTnet--TLS--> provider
 ```
 
@@ -167,7 +167,7 @@ src/     the mail core: IMAP, POP3, SMTP, MIME, charsets and Hebrew,
 common/  code shared with the other AERA programs (from AERA-Atari):
          BearSSL, the DSP RSA program, bidi, dates, passwords, build tools
 ui/      the GEM program: windows, drawing, editor, dialogs, menus
-gateway/ the Raspberry Pi gateway (stunnel)
+gateway/ the Raspberry Pi gateway (emailgate.py, install.sh)
 tests/   unit and integration tests, the Hatari test rig
 tools/   the icon generator, sync-common.sh, FAKESTNG.PRG (for testing in Hatari only)
 binary/  what goes on the Atari: EMAIL.PRG, CACERT.PEM, ROOTS.DAT, EMAIL.HYP,
@@ -182,12 +182,14 @@ real servers before it runs on the Atari:
 ```
 make test           # charsets (Hebrew), MIME, message building, bidi
 make itest          # IMAP, POP3, SMTP against a local Dovecot and a test SMTP server
-TLS=1 make itest    # the same through the gateway's stunnel set-up, TLS-only servers
+TLS=1 make itest    # the same through the gateway (emailgate.py), TLS-only servers
 FALCON=1 make itest # Falcon mode: EMail's own TLS, implicit TLS and STARTTLS
 ```
 
 `make itest` needs `dovecot-imapd` and `dovecot-pop3d`; `TLS=1` also
-needs `stunnel4`.
+needs `openssl`. `make test` also runs the gateway's own tests, and the
+fuzz targets' inputs again (`tests/fuzz`; `make fuzz` with clang fuzzes
+the IMAP, POP3, SMTP and MIME readers).
 
 `tests/hatari/` runs EMAIL.PRG itself in the
 [Hatari](https://hatari.tuxfamily.org/) emulator with

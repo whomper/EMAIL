@@ -5,10 +5,9 @@
 # (Dovecot) and an SMTP server, all on localhost. Needs dovecot-imapd and
 # dovecot-pop3d installed; run with `make itest`.
 #
-# TLS=1 runs the same tests through the Raspberry Pi gateway set-up: the
-# servers only speak TLS (IMAPS, POP3S, SMTP on 465 style) and stunnel,
-# configured like gateway/install.sh does, offers the plain ports EMail
-# uses. Needs stunnel4 and openssl.
+# TLS=1 runs the same tests through the Raspberry Pi gateway: the servers
+# only speak TLS (IMAPS, POP3S, SMTP on 465 style) and gateway/emailgate.py,
+# as on the Pi, offers the plain ports EMail uses. Needs openssl.
 #
 # FALCON=1 tests Falcon mode: EMail speaks TLS itself (BearSSL), to the
 # TLS-only ports (IMAP and SMTP of the first account) and with STARTTLS
@@ -25,7 +24,7 @@ mkdir -p "$D"/{state,home/dana/Maildir/{new,cur,tmp},work}
 echo "dana:{PLAIN}secret" > "$D/users"
 [ -n "${FALCON:-}" ] && TLS=1
 if [ -n "${TLS:-}" ]; then
-  # servers on TLS-only ports, stunnel in front as on the Pi
+  # servers on TLS-only ports, the gateway in front as on the Pi
   openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj /CN=localhost \
     -addext subjectAltName=DNS:localhost -keyout "$D/key.pem" -out "$D/cert.pem" 2>/dev/null
   chmod 644 "$D/key.pem"
@@ -45,30 +44,12 @@ s = s.replace("inet_listener imaps {\n    port = 0", "inet_listener imaps {\n   
 s = s.replace("inet_listener pop3s {\n    port = 0", "inet_listener pop3s {\n    port = " + pop3s)
 open(p, "w").write(s)
 PY
-  cat > "$D/stunnel.conf" <<CONF
-foreground = yes
-pid =
-sslVersionMin = TLSv1.2
-verifyChain = yes
-CAfile = $D/cert.pem
-[imap]
-client = yes
-accept = 127.0.0.1:$IMAP
-connect = localhost:$((IMAP + 850))
-checkHost = localhost
-[smtp]
-client = yes
-accept = 127.0.0.1:$SMTP
-connect = localhost:$S_SMTP
-checkHost = localhost
-[pop3]
-client = yes
-accept = 127.0.0.1:$POP3
-connect = localhost:$((POP3 + 885))
-checkHost = localhost
-CONF
+  # (the test certificate the only root it trusts, as the Pi trusts the
+  # system's)
   if [ -n "${FALCON:-}" ]; then TUNPID=; else
-  stunnel "$D/stunnel.conf" 2>"$D/stunnel.log" & TUNPID=$!
+  SSL_CERT_FILE="$D/cert.pem" python3 "$ROOT/gateway/emailgate.py" --bind 127.0.0.1 -v \
+    --ports $IMAP,$SMTP,$POP3 localhost:$((IMAP + 850)) localhost:$S_SMTP localhost:$((POP3 + 885)) \
+    2>"$D/emailgate.log" & TUNPID=$!
   fi
 else
   S_SMTP=$SMTP

@@ -1,0 +1,27 @@
++OK POP3 ready <1.2@pop>
++OK
++OK logged in
++OK 2 3400
++OK
+1 abc-1
+2 abc-2
+.
++OK
+1 1200
+2 2200
+.
++OK message
+From: Avi <avi@example.org>
+To: dana@test.local
+Subject: =?windows-1255?Q?=EE=EB=FA=E1?= old style
+Date: Wed, 07 Oct 2026 09:15:00 +0300
+Message-ID: <cp1255@example.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=windows-1255
+Content-Transfer-Encoding: 8bit
+
+מכתב בעברית בקידוד חלונות.
+
+.
++OK deleted
++OK bye

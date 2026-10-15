@@ -57,8 +57,13 @@ static void next_tok(const char **pp, const char *end, TOK *t)
 		long n = strtol(p + 1, 0, 10);
 		while (p < end && *p != '\n')
 			p++;
-		p++;
-		if (p + n > end)
+		if (p < end)
+			p++;
+		/* the size the server said, within what came: never past the
+		   end, never backwards ("{-5}", "{" at the end) */
+		if (n < 0)
+			n = 0;
+		if (n > end - p)
 			n = end - p;
 		t->type = T_LITERAL;
 		t->s = p;
@@ -193,6 +198,11 @@ static int read_response(IMAP *im)
 			return 1;
 		}
 		lit = strtol(br + 1, 0, 10);
+		if (lit < 0 || lit > 0x3FFFFF00L) {
+			str_copy(im->err, "the server sent a damaged answer", sizeof(im->err));
+			sb_free(&line);
+			return -1;
+		}
 		sb_adds(&im->resp, "\r\n");
 		if (lit > 4096 && !sb_reserve(&im->resp, lit + 64)) {
 			str_copy(im->err, "not enough memory for this message", sizeof(im->err));
@@ -309,7 +319,12 @@ static IMAP *login_once(const char *host, unsigned short port, int sec, const ch
 		free(im);
 		return 0;
 	}
-	if (read_response(im) < 0 || strncmp(im->resp.s, "* ", 2)) {
+	if (read_response(im) < 0) {		/* stopped, timed out, closed */
+		snprintf(err, errlen, "%s: %s", host, im->err);
+		imap_logout(im);
+		return 0;
+	}
+	if (strncmp(im->resp.s, "* ", 2)) {
 		snprintf(err, errlen, "%s did not greet as an IMAP server", host);
 		imap_logout(im);
 		return 0;

@@ -1,0 +1,13 @@
+220-smtp.example.org
+220 ESMTP
+250-x
+250 AUTH LOGIN
+334 VXNlcm5hbWU6
+334 UGFzc3dvcmQ6
+235 ok
+250 OK
+550 5.1.1 no such user
+250 OK
+354 go
+250 queued
+221 bye

@@ -1,0 +1,13 @@
+220 smtp.example.org ESMTP
+250-smtp.example.org
+250-PIPELINING
+250-SIZE 35882577
+250-AUTH PLAIN LOGIN
+250 8BITMIME
+235 2.7.0 Accepted
+250 OK
+250 OK
+250 OK
+354 go
+250 2.0.0 queued
+221 bye

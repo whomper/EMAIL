@@ -36,8 +36,12 @@ static POP3 *login_once(const char *host, unsigned short port, int sec, const ch
 		free(p);
 		return 0;
 	}
-	if (reply(p) <= 0) {
-		snprintf(err, errlen, "%s did not greet as a POP3 server", host);
+	r = reply(p);
+	if (r <= 0) {
+		if (r < 0)			/* stopped, timed out, closed */
+			snprintf(err, errlen, "%s: %s", host, p->err);
+		else
+			snprintf(err, errlen, "%s did not greet as a POP3 server", host);
 		pop3_quit(p);
 		return 0;
 	}
@@ -120,6 +124,12 @@ int pop3_stat(POP3 *p, long *count, long *size)
 		return r;
 	*count = strtol(p->line.s + 3, &e, 10);
 	*size = strtol(e, 0, 10);
+	/* the count sizes pop3_list's tables: one the Atari can't hold (or a
+	   negative one) is refused, never multiplied past 32 bits */
+	if (*count < 0 || *count > POP3_MAXMSG) {
+		snprintf(p->err, sizeof(p->err), "the server says it has %ld messages: too many for EMail", *count);
+		return -1;
+	}
 	return 1;
 }
 

@@ -18,6 +18,7 @@ typedef struct {
 POP3 *pop3_login(const char *host, unsigned short port, int sec, const char *user,
 		 const char *pass, char *err, int errlen);
 void  pop3_quit(POP3 *p);
+#define POP3_MAXMSG 65535L	/* more on the server: refused (memory) */
 int   pop3_stat(POP3 *p, long *count, long *size);
 /* cb(number, unique id, size) for each message on the server */
 int   pop3_list(POP3 *p, void (*cb)(void *ud, long num, const char *uid, long size), void *ud);

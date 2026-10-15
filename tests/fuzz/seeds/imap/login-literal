@@ -1,0 +1,6 @@
+€* OK ready
+T0001 OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] caps
++ 
+T0002 OK logged in
+* LIST () "/" INBOX
+T0003 OK

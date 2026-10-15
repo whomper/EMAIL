@@ -312,7 +312,7 @@ so those are left out when showing a message.
 | Shift+Ctrl+D | send (in the editor)       | Ctrl+S       | into the Outbox (editor) |
 | Ctrl+T       | attach a file              | Ctrl+B       | address book            |
 | F10          | Hebrew keyboard on/off     | Help         | this guide              |
-| Esc          | close the editor           | Ctrl+W       | close the window        |
+| Esc          | close the editor; stop     | Ctrl+W       | close the window        |
 | Tab          | next pane                  | Ctrl+Q       | quit                    |
 | Shift+click  | add/remove one message     | Right button | what you can do there   |
 | Control+click| select a range             |              |                         |
@@ -320,6 +320,12 @@ so those are left out when showing a message.
 The keys are the AERA programs' own (Ctrl+S saves, Ctrl+W closes, Ctrl+F
 will find), with Mail's on the Mac for the rest. Closing the main window
 ends EMail. Without a help viewer, Help offers the list of keys.
+
+**Stopping.** While the busy bee shows (checking mail, sending, reading
+a folder), Esc or Undo stops what EMail is waiting for from the server,
+at once rather than after the minute it would wait: the alert then says
+"stopped", and EMail carries on from what it has. Anything else you type
+meanwhile is kept, and comes through once EMail is done.
 
 **Several messages at once.** Shift+click adds a message to the selection
 (or takes it out), Control+click selects everything from the last message
@@ -407,8 +413,10 @@ the image and mask for icon editors. For EmuTOS,
 ## When something goes wrong
 
 - **"can't connect"**: is the gateway running (`sudo systemctl status
-  stunnel4` on the Pi)? Is the address right? Is STinG (or MiNTnet) set
-  up — can other network programs reach the Pi?
+  emailgate` on the Pi)? Is the address right? Is STinG (or MiNTnet) set
+  up — can other network programs reach the Pi? An answer that starts
+  with "emailgate:" comes from the gateway, and says what it couldn't do
+  (reach your provider, trust its certificate, or let your Atari in).
 - **Falcon mode: "certificate not trusted"**: is CACERT.PEM next to
   EMAIL.PRG, and is the server name right (the certificate must be for
   that name)? **"certificate out of date"**: check the date, time and
@@ -416,6 +424,12 @@ the image and mask for icon editors. For EmuTOS,
   the About box that EMail runs in TT RAM, or use the gateway.
 - **"login failed"**: check user and password; Gmail, iCloud and Yahoo
   need an app password.
+- **"EMail can't write its key file"**: EMail keeps your passwords in
+  EMAIL.INF encrypted, with a key it keeps in `EMAIL.KEY` next to it.
+  When that file can't be written (a locked disk, a full one, a folder
+  in its place) the passwords go into EMAIL.INF as they are, and EMail
+  says so once each time it starts; once `EMAIL.KEY` can be written,
+  they are encrypted the next time EMail saves its settings.
 - **Options > Protocol log** writes the conversation with the servers to
   `EMAIL.LOG` (passwords are hidden); it shows exactly what a server said.
   Each line goes to disk as it happens, so after a crash or a reset the

@@ -26,7 +26,8 @@ static int reply(SMTP *s, int collect)
 			long l = strlen(s->ext), i;
 			for (i = 4; i < s->line.len && l < (long)sizeof(s->ext) - 3; i++)
 				s->ext[l++] = (char)toupper((unsigned char)s->line.s[i]);
-			s->ext[l++] = '\n';
+			if (l < (long)sizeof(s->ext) - 1)	/* full: no more lines */
+				s->ext[l++] = '\n';
 			s->ext[l] = 0;
 		}
 		if (s->line.len < 4 || s->line.s[3] != '-')

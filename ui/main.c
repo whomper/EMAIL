@@ -12,6 +12,8 @@
 #include "../src/mail.h"
 #include "../src/compose.h"
 #include "conn.h"
+#include "secret.h"
+#include "busy.h"
 #include "tls.h"
 #include "../src/plat.h"
 #include "util.h"
@@ -172,15 +174,18 @@ void status(const char *msg)
 		crash_note(msg);
 }
 
+/* the bee; while it shows, Esc or Undo stops the network (busy.h) */
 void busy(int on)
 {
-	graf_mouse(on ? BUSYBEE : ARROW, 0);
+	busy_bee(on);
 }
 
-/* keep the system breathing while we wait for the network */
-static void idle(void)
+/* a password that can't be encrypted goes into EMAIL.INF as it is, and the
+   user is told, once (the AERA guidelines, 7.2) */
+static void warn_plain(const char *keyfile)
 {
-	evnt_timer_(5);
+	alert(1, "[1][EMail can't write its key file, %s, so the passwords in EMAIL.INF are kept unencrypted. "
+		 "Is the disk locked or full?][ OK ]", keyfile);
 }
 
 static void set_logging(void)
@@ -1097,6 +1102,7 @@ int main(void)
 	graf_mouse(BUSYBEE, 0);
 
 	work_dir(dir, sizeof(dir));
+	secret_warn = warn_plain;	/* before anything is saved */
 	store_init(dir);
 	crash_install(dir, "EMail", mail_version);
 	help_init();			/* memory the help viewer may read */
@@ -1111,7 +1117,7 @@ int main(void)
 	hebrew_kbd = opt.hebrew;
 	set_logging();
 	net_init();
-	pf_idle = idle;
+	pf_idle = busy_idle;
 	mail_status = status;
 	tls_note = status;
 	for (d = 0; d < naccts; d++)
@@ -1158,8 +1164,11 @@ int main(void)
 
 	while (!quit) {
 		/* 0x101/3/0: wake on any button press, left or right */
-		short which = evnt_multi_(MU_MESAG | MU_KEYBD | MU_BUTTON | MU_TIMER | MU_M1, 0x101, 3, 0,
-					  1000, msg, &ev);
+		short which;
+		conn_stop = 0;		/* a stop is for one operation */
+		/* a key typed while busy comes first, as if typed now */
+		which = busy_key(&ev) ? MU_KEYBD : evnt_multi_(MU_MESAG | MU_KEYBD | MU_BUTTON | MU_TIMER | MU_M1,
+								 0x101, 3, 0, 1000, msg, &ev);
 		if (which & MU_M1)
 			win_hover(ev.mx, ev.my);
 		if (which & MU_MESAG) {

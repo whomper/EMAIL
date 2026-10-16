@@ -80,9 +80,9 @@ r = rig.Rig(work, tos, serial=(fifo_out, fifo_in))
 ok = False
 try:
     time.sleep(45)
-    r.click(40, 185)                     # the folder Apple
+    r.click(40, 201)                     # the folder Apple
     time.sleep(8)
-    r.click(224, 9)                      # the Folder menu
+    r.click(272, 9)                      # the Folder menu (after Edit and Message)
     time.sleep(1)
     r.shot("r1-menu")
     if True:

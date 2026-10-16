@@ -34,8 +34,10 @@ typedef struct {
 	char name[33];
 } FAM;
 
-static FAM fam[MAXFAM];
-static short nfam, gdos_fonts = -1;
+/* the families, listed while the font dialog is up (MAXFAM of them
+   would keep 9.7 KB a small Atari needs) */
+static FAM *fam, fam_sys;
+static short nfam, maxfam, gdos_fonts = -1;
 static short sizes[MAXSIZE], nsizes;
 static char size_label[MAXSIZE][12];
 
@@ -252,6 +254,12 @@ static void list_families(void)
 	short i, k;
 	if (nfam)
 		return;
+	fam = malloc(MAXFAM * sizeof(FAM));
+	maxfam = MAXFAM;
+	if (!fam) {			/* the system font, at least */
+		fam = &fam_sys;
+		maxfam = 1;
+	}
 	fam[0].id = 1;
 	fam[0].format = 1;
 	fam[0].mono = 1;
@@ -262,7 +270,7 @@ static void list_families(void)
 		gdos_fonts = vq_gdos() ? vst_load_fonts(vdi_h, 0) : 0;
 		busy(0);
 	}
-	for (i = 2; i <= gdos_fonts + 1 && nfam < MAXFAM; i++) {
+	for (i = 2; i <= gdos_fonts + 1 && nfam < maxfam; i++) {
 		FAM *f = &fam[nfam];
 		short n;
 		f->id = vqt_name(vdi_h, i, f->name);
@@ -751,6 +759,10 @@ void font_menu(void)
 		opt.hebfont = sel_heb;
 	}
 	font_apply();
+	if (fam != &fam_sys)
+		free(fam);
+	fam = 0;
+	nfam = 0;
 	if (ok) {
 		store_save_settings();
 		win_relayout();

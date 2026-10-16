@@ -103,8 +103,11 @@ $(OBJDIR)/%.o: common/atari/%.c $(HDRS) | $(OBJDIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 $(OBJDIR)/%.o: common/ui/%.c $(HDRS) | $(OBJDIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
+# the stack: 32 KB instead of crt0's 48. The most EMail was seen to use,
+# with the stack painted in falcon_test (RSA on the 68030), net_test,
+# stop_test and a 1.4 MB message, is 15 KB; the 16 KB saved help a 1 MB ST
 $(OBJDIR)/crt0.o: common/atari/crt0.S | $(OBJDIR)
-	$(CC) -m68000 -c -o $@ $<
+	$(CC) -m68000 -DSTACK_SIZE=32768 -c -o $@ $<
 $(OBJDIR)/sting_s.o: common/atari/sting.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/crash_s.o: common/atari/crash.S | $(OBJDIR)

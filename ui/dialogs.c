@@ -734,47 +734,60 @@ static void zone_label(void)
 
 static short pick_w(const char *title, const char **items, short n, short lw);
 static short pick_from;		/* the row a picker starts on */
-static OBJECT keep_tree[DMAX];
-static TEDINFO keep_ted[TMAX];
-static short keep_page[DMAX], keep_n[4];
+/* the settings dialog, kept aside while a picker builds in the one tree */
+typedef struct {
+	OBJECT tree[DMAX];
+	TEDINFO ted[TMAX];
+	short page[DMAX], n[4];
+} KEEP;
 static GRECT pick_area;		/* where the last picker was */
 
 /* every zone with its offset now; the one chosen goes into s_zone */
 static void zone_pick(void)
 {
-	static char lab[120][40];
-	static const char *items[120];
+	/* allocated while the picker is up: about 7 KB a small Atari needs
+	   the rest of the time */
+	struct {
+		char lab[120][40];
+		const char *items[120];
+		KEEP keep;
+	} *z = malloc(sizeof(*z));
 	long now = zone_utc_now();
 	short n = (short)tz_count(), i, sel = 0;
+	if (!z) {
+		alert(1, "[1][Not enough memory for|the list of time zones.][ OK ]");
+		return;
+	}
 	if (n > 120)
 		n = 120;
 	for (i = 0; i < n; i++) {
-		const TZONE *z = tz_index(i);
+		const TZONE *t = tz_index(i);
 		char off[16];
-		tz_label(z, now, off, sizeof(off));
-		snprintf(lab[i], sizeof(lab[i]), "%-28s %s", z->name, off);
-		items[i] = lab[i];
-		if (!strcmp(z->name, s_zone))
+		tz_label(t, now, off, sizeof(off));
+		snprintf(z->lab[i], sizeof(z->lab[i]), "%-28s %s", t->name, off);
+		z->items[i] = z->lab[i];
+		if (!strcmp(t->name, s_zone))
 			sel = i;
 	}
 	/* the picker builds in the one tree: keep the settings aside */
-	memcpy(&keep_tree, tree, sizeof(keep_tree));
-	memcpy(&keep_ted, ted, sizeof(keep_ted));
-	memcpy(&keep_page, page_of, sizeof(keep_page));
-	keep_n[0] = nobj;
-	keep_n[1] = nted;
-	keep_n[2] = last_child;
-	keep_n[3] = npw;
+	memcpy(z->keep.tree, tree, sizeof(z->keep.tree));
+	memcpy(z->keep.ted, ted, sizeof(z->keep.ted));
+	memcpy(z->keep.page, page_of, sizeof(z->keep.page));
+	z->keep.n[0] = nobj;
+	z->keep.n[1] = nted;
+	z->keep.n[2] = last_child;
+	z->keep.n[3] = npw;
 	pick_from = sel;
-	i = pick_w("Your time zone", items, n, 38);
+	i = pick_w("Your time zone", z->items, n, 38);
 	pick_from = 0;
-	memcpy(tree, &keep_tree, sizeof(keep_tree));
-	memcpy(ted, &keep_ted, sizeof(keep_ted));
-	memcpy(page_of, &keep_page, sizeof(keep_page));
-	nobj = keep_n[0];
-	nted = keep_n[1];
-	last_child = keep_n[2];
-	npw = keep_n[3];
+	memcpy(tree, z->keep.tree, sizeof(z->keep.tree));
+	memcpy(ted, z->keep.ted, sizeof(z->keep.ted));
+	memcpy(page_of, z->keep.page, sizeof(z->keep.page));
+	nobj = z->keep.n[0];
+	nted = z->keep.n[1];
+	last_child = z->keep.n[2];
+	npw = z->keep.n[3];
+	free(z);
 	if (i >= 0)
 		str_copy(s_zone, tz_index(i)->name, sizeof(s_zone));
 	zone_label();
@@ -1171,10 +1184,15 @@ static int cmp_label(const void *x, const void *y)
 
 FINFO *dlg_pick_folder(ACCOUNT *a, const char *title)
 {
-	static char labels[MAXFOLDER][100];
+	/* allocated while the picker is up (6 KB) */
+	char (*labels)[100] = malloc(MAXFOLDER * sizeof(*labels));
 	const char *items[MAXFOLDER];
 	FINFO *map[MAXFOLDER];
 	short i, n = 0, r;
+	if (!labels) {
+		alert(1, "[1][Not enough memory for|the list of folders.][ OK ]");
+		return 0;
+	}
 	for (i = 0; i < a->nfolders; i++) {
 		FINFO *f = &a->folders[i];
 		if (f->noselect || f->role == FR_OUTBOX || f == cur_finfo)
@@ -1186,6 +1204,7 @@ FINFO *dlg_pick_folder(ACCOUNT *a, const char *title)
 		n++;
 	}
 	if (!n) {
+		free(labels);
 		alert(1, "[1][There is no other folder|to choose.][ OK ]");
 		return 0;
 	}
@@ -1205,6 +1224,7 @@ FINFO *dlg_pick_folder(ACCOUNT *a, const char *title)
 		}
 	}
 	r = pick_w(title, items, n, 25);	/* folder names are short */
+	free(labels);
 	return r < 0 ? 0 : map[r];
 }
 

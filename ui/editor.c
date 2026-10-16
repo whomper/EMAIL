@@ -24,8 +24,10 @@ typedef struct {
 
 #define MAXLINES 4000
 
+/* the lines, a table that grows as the message does (all 4000 at once
+   took 32 KB a 1 MB Atari doesn't have to spare) */
 static ELINE *ln;
-static long nl;
+static long nl, ncap;
 static long cy;
 static short cx;
 static short dirty;
@@ -60,8 +62,14 @@ static int grow_line(ELINE *l, short need)
 static int ins_line(long at, const char *s, short n)
 {
 	ELINE *l;
-	if (nl >= MAXLINES)
-		return 0;
+	if (nl >= ncap) {
+		long cap = ncap * 2 > MAXLINES ? MAXLINES : ncap * 2;
+		ELINE *more = nl < MAXLINES ? realloc(ln, cap * sizeof(ELINE)) : 0;
+		if (!more)
+			return 0;
+		ln = more;
+		ncap = cap;
+	}
 	memmove(ln + at + 1, ln + at, (nl - at) * sizeof(ELINE));
 	nl++;
 	l = &ln[at];
@@ -132,8 +140,8 @@ void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
 		}
 	}
 	free_all();
-	if (!ln)
-		ln = calloc(MAXLINES, sizeof(ELINE));
+	if (!ln && (ln = malloc(128 * sizeof(ELINE))) != 0)
+		ncap = 128;
 	if (!ln) {
 		free(text);
 		alert(1, "[1][Not enough memory to|start this message.][ OK ]");

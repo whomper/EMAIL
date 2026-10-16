@@ -112,9 +112,10 @@ const char *pf_getenv(const char *name)
 	return 0;
 }
 
+/* milliseconds, right even where the 200 Hz timer runs faster (tos.c) */
 unsigned long pf_ms(void)
 {
-	return tos_hz200() * 5;
+	return tos_ms();
 }
 
 /* Timer jitter: the MFP's timer C counts every 26 us and the video

@@ -213,10 +213,14 @@ static void warn_plain(const char *keyfile)
 static void set_logging(void)
 {
 	conn_log_flush();
-	if (opt.log)
+	if (opt.log) {
+		const char *clock = tos_clock();
 		path_join(conn_logfile, sizeof(conn_logfile), opt.workdir, "EMAIL.LOG");
-	else
+		if (*clock)		/* a 200 Hz timer that isn't: the times are corrected */
+			conn_log("EMail", " -- ", clock, (long)strlen(clock));
+	} else {
 		conn_logfile[0] = 0;
+	}
 }
 
 /* Israeli SI-1452 layout by key position (scancode 0x10-0x35), giving

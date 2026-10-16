@@ -230,9 +230,8 @@ names the connection: Gateway, Falcon (TLS on the 68030) or Falcon/DSP.
 ## Writing
 
 The editor's buttons along the top are **Send**, **Outbox**,
-**Attach...**, **Address book...** and, on the right, **Hebrew** (shown
-pressed while the Hebrew keyboard is on). Rest the mouse on one to see
-what it does and its key. A right-click in the editor gives the same
+**Attach...** and **Address book...**. Rest the mouse on one to see what
+it does and its key. F10 switches the Hebrew keyboard on and off. A right-click in the editor gives the same
 commands, in the same order, and Cut, Copy and Paste.
 
 Below them, the header lines, and your text below the line:
@@ -252,7 +251,8 @@ your text...
 - Ctrl+B (Message > Address book) adds an address you wrote to before.
   With no message open, it starts a new one to the address you pick.
 - Ctrl+T (Message > Attach file) adds an `Attach:` line; you can also
-  type one.
+  type one. The file selector picks one file at a time: to attach
+  several at once, drop them on EMail from the desktop (see below).
 - Lines wrap at 72 characters as you type (Options > Settings).
 - **Shift+Ctrl+D sends now.** Ctrl+S (Message > Put in Outbox) keeps it
   for later; it goes out with the next Check mail. Closing the window asks

@@ -247,7 +247,6 @@ void set_hebrew_kbd(short on)
 {
 	hebrew_kbd = on;
 	menu_update();
-	editor_bar_redraw();		/* its Hebrew button shows the keyboard */
 }
 
 /* folder lists can be rebuilt by the server: find the open one again */

@@ -230,7 +230,7 @@ static short cursor_col(long line, short col, short cols, short *hoff)
  * EFTP's toolbar, for the message being written: the commands of the
  * right-click menu, in its order, and of the Message menu; each button's
  * key in its tooltip. It is the window's fixed head (w->head_h). */
-enum { EB_SEND, EB_OUTBOX, EB_ATTACH, EB_ABOOK, EB_HEBREW, NEB };
+enum { EB_SEND, EB_OUTBOX, EB_ATTACH, EB_ABOOK, NEB };
 static GRECT eb[NEB];
 static short eb_narrow;
 
@@ -246,7 +246,6 @@ static const char *eb_label(int i)
 	case EB_OUTBOX: return "Outbox";
 	case EB_ATTACH: return eb_narrow ? "Attach" : "Attach...";
 	case EB_ABOOK: return eb_narrow ? "Address" : "Address book...";
-	case EB_HEBREW: return "Hebrew";
 	}
 	return "";
 }
@@ -256,7 +255,6 @@ static const char *const eb_tip[NEB] = {
 	"Put it in the Outbox, to go with the next check (^S)",
 	"Attach a file (^T)",
 	"An address from the address book (^B)",
-	"Type in Hebrew, or in English again (F10)",
 };
 
 static void eb_layout(WIN *w)
@@ -266,7 +264,7 @@ static void eb_layout(WIN *w)
 	eb_narrow = w->work.w < 52 * cw;
 	for (i = 0; i < NEB; i++) {
 		bw = ((short)strlen(eb_label(i)) + 2) * cw;
-		eb[i].x = i == EB_HEBREW ? w->work.x + w->work.w - 4 - bw : x;
+		eb[i].x = x;
 		eb[i].y = w->work.y + 3;
 		eb[i].w = bw;
 		eb[i].h = ch + 2;
@@ -279,10 +277,10 @@ static void eb_draw(int i)
 {
 	GRECT r = eb[i];
 	const char *l = eb_label(i);
-	short n = (short)strlen(l), on = i == EB_HEBREW && hebrew_kbd;
-	fill(&r, on ? 1 : 0);		/* the keyboard: pressed while it is Hebrew */
+	short n = (short)strlen(l);
+	fill(&r, 0);
 	frame(&r, 1);
-	text_at(r.x + (r.w - n * cw) / 2, r.y + 1, l, n, n, TX_LTR | (on ? TX_INVERSE : 0));
+	text_at(r.x + (r.w - n * cw) / 2, r.y + 1, l, n, n, TX_LTR);
 }
 
 static void draw_bar(WIN *w, GRECT *clip)
@@ -340,7 +338,6 @@ static void bar_click(short mx, short my)
 		case EB_OUTBOX: editor_send(0); break;
 		case EB_ATTACH: editor_attach(); break;
 		case EB_ABOOK: editor_insert_address(); break;
-		case EB_HEBREW: set_hebrew_kbd(!hebrew_kbd); break;
 		}
 		return;
 	}

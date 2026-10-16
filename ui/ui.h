@@ -133,7 +133,7 @@ int  editor_dirty(void);
 void editor_send(int now);
 void editor_attach(void);
 void editor_attach_file(const char *path);
-void editor_bar_redraw(void);			/* its buttons (the Hebrew one shows the keyboard) */
+void editor_bar_redraw(void);			/* its buttons */
 int  editor_tip(short mx, short my, char *out, int size);	/* a button's tooltip: 1 */
 void editor_clip(int what);			/* CLIP_COPY, CLIP_CUT, CLIP_PASTE */
 void editor_insert_text(const char *s);		/* at the cursor */

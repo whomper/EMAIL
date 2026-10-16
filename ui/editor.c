@@ -110,6 +110,8 @@ static long header_end(void)
 	return -1;
 }
 
+static void eb_layout(WIN *w);
+
 static int in_body(long line)
 {
 	long he = header_end();
@@ -121,8 +123,6 @@ static void set_title(void)
 	char t[100];
 	snprintf(t, sizeof(t), " %s - %s%s ", "New message", e_acct ? e_acct->name : "", dirty ? " *" : "");
 	win_title(&w_editor, t);
-	win_info(&w_editor, hebrew_kbd ? " Hebrew keyboard (F10)   \x01^D send   Esc close"
-				       : " \x01^D send   ^S Outbox   ^T attach   F10 Hebrew   Esc close");
 }
 
 void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
@@ -175,6 +175,7 @@ void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
 	w_editor.total = nl;
 	set_title();
 	win_open(&w_editor);
+	eb_layout(&w_editor);		/* the bar's height, before the rows are counted */
 	win_sliders(&w_editor);
 	win_redraw(&w_editor, 0);
 }
@@ -225,14 +226,151 @@ static short cursor_col(long line, short col, short cols, short *hoff)
 	return visual_col(l->s + off, l->n - off, col - off, cols, 1, 0);
 }
 
+/* ---------------- the button bar ----------------
+ * EFTP's toolbar, for the message being written: the commands of the
+ * right-click menu, in its order, and of the Message menu; each button's
+ * key in its tooltip. It is the window's fixed head (w->head_h). */
+enum { EB_SEND, EB_OUTBOX, EB_ATTACH, EB_ABOOK, EB_HEBREW, NEB };
+static GRECT eb[NEB];
+static short eb_narrow;
+
+static int on_rect(GRECT *r, short x, short y)
+{
+	return x >= r->x && y >= r->y && x < r->x + r->w && y < r->y + r->h;
+}
+
+static const char *eb_label(int i)
+{
+	switch (i) {
+	case EB_SEND: return "Send";
+	case EB_OUTBOX: return "Outbox";
+	case EB_ATTACH: return eb_narrow ? "Attach" : "Attach...";
+	case EB_ABOOK: return eb_narrow ? "Address" : "Address book...";
+	case EB_HEBREW: return "Hebrew";
+	}
+	return "";
+}
+
+static const char *const eb_tip[NEB] = {
+	"Send the message now (\x01^D)",
+	"Put it in the Outbox, to go with the next check (^S)",
+	"Attach a file (^T)",
+	"An address from the address book (^B)",
+	"Type in Hebrew, or in English again (F10)",
+};
+
+static void eb_layout(WIN *w)
+{
+	short x = w->work.x + 4, i, bw;
+	w->head_h = ch + 8;
+	eb_narrow = w->work.w < 52 * cw;
+	for (i = 0; i < NEB; i++) {
+		bw = ((short)strlen(eb_label(i)) + 2) * cw;
+		eb[i].x = i == EB_HEBREW ? w->work.x + w->work.w - 4 - bw : x;
+		eb[i].y = w->work.y + 3;
+		eb[i].w = bw;
+		eb[i].h = ch + 2;
+		/* a gap between sending and adding to it */
+		x += bw + (i == EB_OUTBOX ? cw : 2);
+	}
+}
+
+static void eb_draw(int i)
+{
+	GRECT r = eb[i];
+	const char *l = eb_label(i);
+	short n = (short)strlen(l), on = i == EB_HEBREW && hebrew_kbd;
+	fill(&r, on ? 1 : 0);		/* the keyboard: pressed while it is Hebrew */
+	frame(&r, 1);
+	text_at(r.x + (r.w - n * cw) / 2, r.y + 1, l, n, n, TX_LTR | (on ? TX_INVERSE : 0));
+}
+
+static void draw_bar(WIN *w, GRECT *clip)
+{
+	GRECT r;
+	int i;
+	r.x = w->work.x;
+	r.y = w->work.y;
+	r.w = w->work.w;
+	r.h = w->head_h;
+	if (clip->y >= r.y + r.h || clip->y + clip->h <= r.y)
+		return;
+	for (i = 0; i < NEB; i++)
+		eb_draw(i);
+	hline(w->work.x, w->work.x + w->work.w - 1, w->work.y + w->head_h - 1);
+}
+
+void editor_bar_redraw(void)
+{
+	GRECT r;
+	if (w_editor.h <= 0)
+		return;
+	r = w_editor.work;
+	r.h = w_editor.head_h;
+	win_redraw(&w_editor, &r);
+}
+
+/* a click on the bar: the button acts at once, shown pressed a moment */
+static void bar_click(short mx, short my)
+{
+	int i;
+	for (i = 0; i < NEB; i++) {
+		GRECT r = eb[i];
+		short p[4];
+		if (!on_rect(&r, mx, my))
+			continue;
+		wind_update(BEG_UPDATE);
+		graf_mouse(M_OFF, 0);
+		clip_on(&r);
+		p[0] = r.x + 1;
+		p[1] = r.y + 1;
+		p[2] = r.x + r.w - 2;
+		p[3] = r.y + r.h - 2;
+		vswr_mode(vdi_h, 3);
+		vsf_interior(vdi_h, 1);
+		vsf_color(vdi_h, 1);
+		vr_recfl(vdi_h, p);
+		vswr_mode(vdi_h, 1);
+		graf_mouse(M_ON, 0);
+		wind_update(END_UPDATE);
+		evnt_timer_(80);
+		editor_bar_redraw();
+		switch (i) {
+		case EB_SEND: editor_send(1); break;
+		case EB_OUTBOX: editor_send(0); break;
+		case EB_ATTACH: editor_attach(); break;
+		case EB_ABOOK: editor_insert_address(); break;
+		case EB_HEBREW: set_hebrew_kbd(!hebrew_kbd); break;
+		}
+		return;
+	}
+}
+
+/* the tooltip for a button of the bar */
+int editor_tip(short mx, short my, char *out, int size)
+{
+	int i;
+	if (w_editor.h <= 0 || !win_is_top(&w_editor))
+		return 0;
+	eb_layout(&w_editor);
+	for (i = 0; i < NEB; i++)
+		if (on_rect(&eb[i], mx, my)) {
+			str_copy(out, eb_tip[i], size);
+			return 1;
+		}
+	return 0;
+}
+
 static void draw(WIN *w, GRECT *clip)
 {
 	long i, rows = win_rows(w) + 1, he = header_end();
 	short cols = w->work.w / cw - 1, x0 = w->work.x + cw / 2;
+	eb_layout(w);
 	fill(clip, 0);
+	draw_bar(w, clip);
 	for (i = w->top; i < nl && i < w->top + rows; i++) {
 		ELINE *l = &ln[i];
-		short y = w->work.y + (short)((i - w->top) * ch), hoff = 0;
+		short y = w->work.y + w->head_h + (short)((i - w->top) * ch), hoff = 0;
 		if (i == cy && cx > cols - 2)
 			hoff = cx - cols + 2;
 		if (he < 0 || i < he) {
@@ -727,10 +865,16 @@ static void resized(WIN *w)
 /* clicking puts the cursor there */
 static void click(WIN *w, short mx, short my, short clicks, short kstate)
 {
-	long line = w->top + (my - w->work.y) / ch;
+	long line;
 	short col = (mx - w->work.x - cw / 2) / cw, cols = w->work.w / cw - 1;
 	(void)clicks;
 	(void)kstate;
+	eb_layout(w);
+	if (my < w->work.y + w->head_h) {
+		bar_click(mx, my);
+		return;
+	}
+	line = w->top + (my - w->work.y - w->head_h) / ch;
 	if (line >= nl)
 		line = nl - 1;
 	if (line < 0)
@@ -752,7 +896,7 @@ static void click(WIN *w, short mx, short my, short clicks, short kstate)
 
 static void rclick(WIN *w, short mx, short my)
 {
-	const char *lab[8];
+	const char *lab[11];
 	short r;
 	(void)w;
 	lab[0] = "Send now         \x01^D";
@@ -761,14 +905,21 @@ static void rclick(WIN *w, short mx, short my)
 	lab[3] = "Attach file...    ^T";
 	lab[4] = "Address book...   ^B";
 	lab[5] = "-";
-	lab[6] = hebrew_kbd ? "\x08Hebrew keyboard F10" : "Hebrew keyboard   F10";
-	r = popup(mx, my, lab, 7);
+	lab[6] = hebrew_kbd ? "\x08Hebrew keyboard   F10" : "Hebrew keyboard   F10";
+	lab[7] = "-";
+	lab[8] = "Cut line          ^X";
+	lab[9] = "Copy line         ^C";
+	lab[10] = "Paste             ^V";
+	r = popup(mx, my, lab, 11);
 	switch (r) {
 	case 0: editor_send(1); break;
 	case 1: editor_send(0); break;
 	case 3: editor_attach(); break;
 	case 4: editor_insert_address(); break;
 	case 6: set_hebrew_kbd(!hebrew_kbd); break;
+	case 8: editor_clip(CLIP_CUT); break;
+	case 9: editor_clip(CLIP_COPY); break;
+	case 10: editor_clip(CLIP_PASTE); break;
 	}
 }
 

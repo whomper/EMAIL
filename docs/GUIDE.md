@@ -186,7 +186,7 @@ folder with thousands of messages opens as quickly as a small one.
 | a folder      | Open, Check for new mail, Mark all as read, Download all messages, New folder, Rename folder, Delete folder |
 | an account    | Check mail, New message, Edit account, Refresh folder list             |
 | an attachment | Save attachment                                                        |
-| the editor    | Send now, Put in Outbox, Attach file, Address book, Hebrew keyboard    |
+| the editor    | Send now, Put in Outbox, Attach file, Address book, Hebrew keyboard, Cut line, Copy line, Paste |
 
 Pick with a click, press-drag-release, or the arrow keys and Return;
 Esc closes the menu.
@@ -229,7 +229,13 @@ names the connection: Gateway, Falcon (TLS on the 68030) or Falcon/DSP.
 
 ## Writing
 
-The editor holds the header lines on top and your text below the line:
+The editor's buttons along the top are **Send**, **Outbox**,
+**Attach...**, **Address book...** and, on the right, **Hebrew** (shown
+pressed while the Hebrew keyboard is on). Rest the mouse on one to see
+what it does and its key. A right-click in the editor gives the same
+commands, in the same order, and Cut, Copy and Paste.
+
+Below them, the header lines, and your text below the line:
 
 ```
 To: Dana <dana@example.com>, avi@example.org

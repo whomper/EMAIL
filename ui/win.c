@@ -29,7 +29,7 @@ static char main_info[120];
 static short sbw;			/* scroll bar width */
 #define DIV 4				/* divider thickness */
 
-#define EDKIND (NAME | CLOSER | FULLER | MOVER | INFO | SIZER | UPARROW | DNARROW | VSLIDE)
+#define EDKIND (NAME | CLOSER | FULLER | MOVER | SIZER | UPARROW | DNARROW | VSLIDE)
 /* no SIZER: with no sliders of its own the AES would keep an empty
    column down the right edge for it. The main window draws its own size
    box below the message pane's scroll bar instead. */

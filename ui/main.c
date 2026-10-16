@@ -247,12 +247,7 @@ void set_hebrew_kbd(short on)
 {
 	hebrew_kbd = on;
 	menu_update();
-	if (w_editor.h > 0) {
-		/* the editor shows the keyboard in its info line */
-		char *i = hebrew_kbd ? " Hebrew keyboard (F10)   \x01^D send   Esc close"
-				     : " \x01^D send   ^S Outbox   ^T attach   F10 Hebrew   Esc close";
-		win_info(&w_editor, i);
-	}
+	editor_bar_redraw();		/* its Hebrew button shows the keyboard */
 }
 
 /* folder lists can be rebuilt by the server: find the open one again */
@@ -812,6 +807,63 @@ void cmd_refresh_folders(ACCOUNT *a)
 
 static unsigned long last_input;	/* pf_ms() of the last key, click or message */
 
+/* ---------------- tooltips (as EFTP's and ECal's) ----------------
+ * shown when the mouse rests on a button of the editor's bar, gone when
+ * it moves, a key is pressed or a button clicked */
+static short tip_on, tip_tried, hover_x = -1, hover_y = -1;
+static unsigned long hover_at;
+static GRECT tip_r;
+
+static void tip_hide(void)
+{
+	if (!tip_on)
+		return;
+	tip_on = 0;
+	/* whatever is under it, in any window, is drawn again */
+	form_dial(FMD_FINISH, tip_r.x, tip_r.y, tip_r.w, tip_r.h);
+}
+
+static void tip_show(void)
+{
+	char text[120];
+	short n;
+	GRECT r, scr;
+	tip_tried = 1;
+	if (!editor_tip(hover_x, hover_y, text, sizeof(text)))
+		return;
+	n = (short)strlen(text);
+	if (n > 60)
+		n = 60;
+	r.w = (n + 2) * cw;
+	r.h = ch + 6;
+	r.x = hover_x + cw;
+	r.y = hover_y + ch + 2;
+	/* on the screen: to the left or above the mouse at the edges */
+	if (r.x + r.w > desk_x + desk_w)
+		r.x = hover_x - r.w - cw / 2;
+	if (r.x < desk_x)
+		r.x = desk_x;
+	if (r.y + r.h > desk_y + desk_h)
+		r.y = hover_y - r.h - 2;
+	if (r.y < desk_y)
+		r.y = desk_y;
+	tip_r = r;
+	tip_r.w++;
+	tip_r.h++;
+	scr.x = scr.y = 0;
+	scr.w = scr_w;
+	scr.h = scr_h;
+	wind_update(BEG_UPDATE);
+	graf_mouse(M_OFF, 0);
+	clip_on(&scr);
+	fill(&r, 0);
+	frame(&r, 1);
+	text_at(r.x + cw, r.y + 3, text, n, n, TX_LTR);
+	graf_mouse(M_ON, 0);
+	wind_update(END_UPDATE);
+	tip_on = 1;
+}
+
 static void wait_release(void)
 {
 	short mx, my, mb, ks;
@@ -1315,13 +1367,23 @@ int main(void)
 
 	while (!quit) {
 		/* 0x101/3/0: wake on any button press, left or right */
-		short which;
+		short which, hovering = !tip_tried && hover_x >= 0;
 		conn_stop = 0;		/* a stop is for one operation */
 		/* a key typed while busy comes first, as if typed now */
 		which = busy_key(&ev) ? MU_KEYBD : evnt_multi_(MU_MESAG | MU_KEYBD | MU_BUTTON | MU_TIMER | MU_M1,
-								 0x101, 3, 0, 1000, msg, &ev);
-		if (which & MU_M1)
+								 0x101, 3, 0, hovering ? 100 : 1000, msg, &ev);
+		if (which & MU_M1) {
 			win_hover(ev.mx, ev.my);
+			hover_x = ev.mx;
+			hover_y = ev.my;
+		}
+		if (which & (MU_M1 | MU_KEYBD | MU_BUTTON | MU_MESAG)) {
+			hover_at = pf_ms();
+			tip_tried = (which & (MU_KEYBD | MU_BUTTON)) != 0;
+			tip_hide();
+		} else if (hovering && pf_ms() - hover_at >= 700UL) {
+			tip_show();	/* after the mouse rested 0.7 s */
+		}
 		if (which & MU_MESAG) {
 			const char *va;
 			switch (msg[0]) {

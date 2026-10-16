@@ -588,7 +588,8 @@ int mail_load_more(ACCOUNT *a, FINFO *fi, long *added)
 	if (!f)
 		return 0;
 	before = f->n;
-	f->window = (f->window > f->n ? f->n : f->window) + opt.page;
+	if (f->window != MIRROR_ALL)
+		f->window = (f->window > f->n ? f->n : f->window) + opt.page;
 	ok = sync_window(a, fi, f, 0);
 	if (added)
 		*added = f->n - before;
@@ -781,40 +782,59 @@ int mail_check(ACCOUNT *a, long *newmsgs)
 
 /* ---------------- reading and changing ---------------- */
 
+/* the body from the server into the cache; with data: kept for the caller;
+   what: the progress line's label, or 0 */
+static int download(FOLDER *f, HDR *h, char **data, long *len, const char *what)
+{
+	ACCOUNT *a = f->acct;
+	char *body = 0;
+	long blen = 0;
+	int r;
+	unsigned long t0;
+	long b0;
+	if (!select_folder(a, f->fi))
+		return 0;
+	if (what)
+		prog_start(0, h->size, 0, "%s", what);
+	else
+		prog_start(0, h->size, 0, "%s: downloading the message", a->name);
+	t0 = pf_ms();
+	b0 = conn_bytes;
+	r = imap_fetch_body(a->im, h->uid, &body, &blen);
+	prog_end();
+	if (r <= 0)
+		return imap_failed(a, r);
+	if (!body) {
+		str_copy(mail_err, "The message is no longer on the server.", sizeof(mail_err));
+		return 0;
+	}
+	timing(t0, b0, "message %lu", h->uid);
+	if (msg_save(f, h->uid, body, blen) == 0) {
+		h->flags |= MF_CACHED;
+		f->dirty = 1;
+	} else if (!data) {		/* to be read, it needn't be kept */
+		free(body);
+		str_copy(mail_err, "Can't save the message: is the disk full?", sizeof(mail_err));
+		return 0;
+	}
+	if (data) {
+		*data = body;
+		if (len)
+			*len = blen;
+	} else {
+		free(body);
+	}
+	return 1;
+}
+
 char *mail_fetch(FOLDER *f, HDR *h, long *len)
 {
 	char *raw = 0;
-	ACCOUNT *a = f->acct;
 	if (h->flags & MF_CACHED || f->fi->local)
 		raw = msg_load(f, h->uid, len);
 	if (!raw && !f->fi->local) {
-		char *body = 0;
-		long blen = 0;
-		int r;
-		unsigned long t0;
-		long b0;
-		if (!select_folder(a, f->fi))
+		if (!download(f, h, &raw, len, 0))
 			return 0;
-		prog_start(0, h->size, 0, "%s: downloading the message", a->name);
-		t0 = pf_ms();
-		b0 = conn_bytes;
-		r = imap_fetch_body(a->im, h->uid, &body, &blen);
-		prog_end();
-		if (r <= 0) {
-			imap_failed(a, r);
-			return 0;
-		}
-		if (!body) {
-			str_copy(mail_err, "The message is no longer on the server.", sizeof(mail_err));
-			return 0;
-		}
-		timing(t0, b0, "message %lu", h->uid);
-		msg_save(f, h->uid, body, blen);
-		h->flags |= MF_CACHED;
-		f->dirty = 1;
-		if (len)
-			*len = blen;
-		raw = body;
 		status("");
 	}
 	if (!raw) {
@@ -825,6 +845,45 @@ char *mail_fetch(FOLDER *f, HDR *h, long *len)
 	if (!(h->flags & MF_SEEN))
 		mail_flag(f, h, MF_SEEN, 1);
 	return raw;
+}
+
+int mail_download(FOLDER *f, HDR *h, int again, const char *what)
+{
+	char path[220];
+	if (f->fi->local) {
+		str_copy(mail_err, "This folder is only on the Atari: there is no copy on the server.", sizeof(mail_err));
+		return 0;
+	}
+	if (h->flags & MF_CACHED) {
+		if (!again)
+			return 1;
+		msg_path(f, h->uid, path, sizeof(path));
+		pf_remove(path);
+		h->flags &= ~MF_CACHED;
+		f->dirty = 1;
+	}
+	return download(f, h, 0, 0, what);
+}
+
+int mail_mirror_all(ACCOUNT *a, FINFO *fi)
+{
+	FOLDER *f;
+	int ok;
+	if (fi->local || fi->noselect)
+		return 1;
+	if (!mail_connect(a))
+		return 0;
+	f = fold_open(a, fi);
+	if (!f) {
+		str_copy(mail_err, "out of memory", sizeof(mail_err));
+		return 0;
+	}
+	f->window = MIRROR_ALL;
+	ok = sync_window(a, fi, f, 0);
+	fold_close(f);
+	if (ok)
+		status("");
+	return ok;
 }
 
 int mail_flag(FOLDER *f, HDR *h, unsigned short flags, int add)

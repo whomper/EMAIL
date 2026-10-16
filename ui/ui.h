@@ -160,7 +160,7 @@ void dlg_keys(void);			/* Help: the keys */
 
 /* menu commands (main.c) */
 enum {
-	C_NONE, C_ABOUT, C_HELP, C_KEYS,
+	C_NONE, C_ABOUT, C_HELP, C_KEYS, C_REFETCH, C_GETALL,
 	C_NEW, C_CHECK, C_SENDQ, C_SAVEATT, C_CLOSE, C_QUIT,
 	C_CUT, C_COPY, C_PASTE, C_SELALL,
 	C_REPLY, C_REPLYALL, C_FORWARD, C_UNREAD, C_MARKREAD, C_FLAG, C_MOVE, C_DELETE,
@@ -172,6 +172,7 @@ void ui_command(short cmd);
 void cmd_new_folder(ACCOUNT *a);
 void cmd_rename_folder(ACCOUNT *a, FINFO *fi);
 void cmd_delete_folder(ACCOUNT *a, FINFO *fi);
+void cmd_download_all(ACCOUNT *a, FINFO *fi);
 void cmd_edit_account(ACCOUNT *a);
 void cmd_refresh_folders(ACCOUNT *a);
 int  falcon_mode_set(int on);		/* 1 if it is now as asked */
@@ -197,6 +198,8 @@ void font_menu(void);
 
 /* main.c */
 void status(const char *msg);
+/* the same, made with printf: what EMail is doing ("Moving to Archive...") */
+void statusf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void busy(int on);
 void cmd_check_all(void);
 void refind_current(const char *server);	/* the open folder after a new folder list */

@@ -229,6 +229,7 @@ void reader_show(HDR *h)
 	if (!cur_folder || !h)
 		return;
 	busy(1);
+	status("Opening the message...");
 	mail_err[0] = 0;
 	raw = mail_fetch(cur_folder, h, &len);
 	busy(0);
@@ -244,6 +245,7 @@ void reader_show(HDR *h)
 		}
 	}
 	if (!raw) {
+		status("");
 		alert(1, "[1][%s][ OK ]", mail_err[0] ? mail_err : "Can't read this message.");
 		return;
 	}
@@ -253,6 +255,7 @@ void reader_show(HDR *h)
 	cur_uid = h->uid;
 	cur_msg = mime_parse(raw, len);
 	if (!cur_msg) {
+		status("");
 		alert(1, "[1][Not enough memory to show|this message.][ OK ]");
 		return;
 	}
@@ -285,7 +288,10 @@ show:
 			win_info(&w_reader, "");
 	}
 	w_reader.top = 0;
+	busy(1);
 	layout();
+	busy(0);
+	status("");
 	win_redraw(&w_reader, 0);
 }
 
@@ -416,10 +422,14 @@ void reader_save_attachment(short i)
 			bs[1] = 0;
 	}
 	strncat(full, name, sizeof(full) - strlen(full) - 1);
+	busy(1);
+	statusf("Saving %s...", name);
 	data = mime_part_data(cur_raw, &cur_msg->parts[i], &len);
 	if (!data || pf_save(full, data, len) < 0)
 		alert(1, "[1][Can't write|%s][ OK ]", full);
 	free(data);
+	busy(0);
+	status("");
 }
 
 static void click(WIN *w, short mx, short my, short clicks, short kstate)

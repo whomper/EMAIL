@@ -9,6 +9,9 @@
  *   mail-cli DIR folders N          list folders
  *   mail-cli DIR sync N FOLDER      mirror one IMAP folder
  *   mail-cli DIR more N FOLDER      mirror the next page of older messages
+ *   mail-cli DIR getall N FOLDER    mirror all of it, and download every body
+ *   mail-cli DIR again N FOLDER UID download the message again
+ *   mail-cli DIR path N FOLDER UID  where the message's body is kept
  *   mail-cli DIR list N FOLDER      headers in the local index
  *   mail-cli DIR show N FOLDER UID  read a message
  *   mail-cli DIR send N FILE        FILE is editor text in UTF-8
@@ -136,6 +139,47 @@ int main(int argc, char **argv)
 			return fail("more");
 		f = fold_open(a, fi);
 		printf("added: %ld, loaded %ld of %ld\n", n, f->n, f->exists);
+		fold_close(f);
+	} else if (!strcmp(cmd, "getall") && a && argc > 4) {
+		FINFO *fi = find_folder(a, argv[4]);
+		FOLDER *f;
+		long i, got = 0, had = 0;
+		if (!fi)
+			return 1;
+		if (!mail_mirror_all(a, fi))
+			return fail("getall");
+		f = fold_open(a, fi);
+		for (i = 0; i < f->n; i++) {
+			if (f->h[i].flags & MF_CACHED)
+				had++;
+			else if (!mail_download(f, &f->h[i], 0, 0))
+				return fail("getall");
+			else
+				got++;
+		}
+		printf("loaded %ld of %ld, downloaded %ld, had %ld\n", f->n, f->exists, got, had);
+		fold_close(f);
+	} else if ((!strcmp(cmd, "again") || !strcmp(cmd, "path")) && a && argc > 5) {
+		FINFO *fi = find_folder(a, argv[4]);
+		FOLDER *f;
+		HDR *h;
+		char path[220];
+		if (!fi)
+			return 1;
+		f = fold_open(a, fi);
+		h = fold_get(f, strtoul(argv[5], 0, 10));
+		if (!h) {
+			fprintf(stderr, "no message %s\n", argv[5]);
+			return 1;
+		}
+		if (!strcmp(cmd, "path")) {
+			msg_path(f, h->uid, path, sizeof(path));
+			printf("%s\n", path);
+		} else if (!mail_download(f, h, 1, 0)) {
+			return fail("again");
+		} else {
+			printf("ok\n");
+		}
 		fold_close(f);
 	} else if (!strcmp(cmd, "list") && a && argc > 4) {
 		FINFO *fi = find_folder(a, argv[4]);

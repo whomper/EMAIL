@@ -112,6 +112,7 @@ typedef struct {
 	char dir[200];
 	unsigned long uidvalidity, uidnext;
 	long window;		/* IMAP: how many of the newest messages to mirror */
+#define MIRROR_ALL 0x7FFFFFFFL	/* window: all of them (Download all messages) */
 	long exists;		/* IMAP: messages in the folder on the server */
 	HDR *h;
 	long n, cap;

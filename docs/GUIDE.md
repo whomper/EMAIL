@@ -182,8 +182,8 @@ folder with thousands of messages opens as quickly as a small one.
 
 | On            | Menu                                                                   |
 |---------------|------------------------------------------------------------------------|
-| a message     | Open, Reply, Reply to all, Forward, Mark as read/unread, Flag, Move to, Delete |
-| a folder      | Open, Check for new mail, Mark all as read, New folder, Delete folder  |
+| a message     | Open, Reply, Reply to all, Forward, Mark as read/unread, Flag, Move to, Download again, Delete |
+| a folder      | Open, Check for new mail, Mark all as read, Download all messages, New folder, Rename folder, Delete folder |
 | an account    | Check mail, New message, Edit account, Refresh folder list             |
 | an attachment | Save attachment                                                        |
 | the editor    | Send now, Put in Outbox, Attach file, Address book, Hebrew keyboard    |
@@ -244,6 +244,7 @@ your text...
   hidden copies.
 - Tab jumps to the next header line and, from the last one, into the text.
 - Ctrl+B (Message > Address book) adds an address you wrote to before.
+  With no message open, it starts a new one to the address you pick.
 - Ctrl+T (Message > Attach file) adds an `Attach:` line; you can also
   type one.
 - Lines wrap at 72 characters as you type (Options > Settings).
@@ -337,6 +338,10 @@ pane then says how many are selected; Mark as read, Mark as unread, Flag,
 Move to and Delete (from the Message menu, the keys or a right-click on the
 selection) work on all of them. A plain click selects one message again.
 
+**The status line**, under the main window's title, says what EMail is
+doing while the busy bee shows: "Opening the message...", "Moving 3 of
+12 to Archive...", "Inbox: downloading 2 of 40 [####......] 41%".
+
 **Move to** shows the folders in alphabetical order, a subfolder with its
 parent ("Archive / 2023"); the arrows page through a long list, a click
 picks a folder and OK (or a double click) moves the messages there.
@@ -360,6 +365,19 @@ Sent and Drafts doesn't count as new). The lists of those folders load
 when you open them. After a move or a delete no other message is chosen, so nothing is
 opened or downloaded that you didn't ask for. Deleting moves a message to Trash on the server;
 deleting in Trash removes it for good.
+
+**Download again** (Message menu, or a right-click on the message) throws
+away the copy on the Atari and fetches the server's again: for a message
+that came cut off or garbled over a bad line. It works on a selection
+too, and on a message that didn't open at all.
+
+**Download all messages** (Folder menu, or a right-click on the folder)
+puts every message of an IMAP folder on the Atari, to read without the
+server: all the headers, not 100 at a time, and then each message the
+Atari hasn't got yet, counted on the status line. Esc stops it; what
+came stays. From then on the folder keeps all its messages listed, and
+doing it again fetches only the new ones. With "Keep read messages on
+disk" off (Settings), they are kept only until EMail quits.
 
 **POP3** accounts download new mail into local folders (Inbox, Sent,
 Trash) and remember what they fetched, so nothing comes twice. With
@@ -400,8 +418,8 @@ work). Folder > Rename folder gives the open one a new name on the
 server; it stays under its parent, its subfolders move with it, and the
 messages already on disk stay with it. Inbox, Sent, Trash, Drafts and the
 Outbox keep their names. Folder > Delete folder removes the open one with
-all its messages. Right-click a folder to rename or delete any folder, or
-to mark all its messages as read.
+all its messages. Right-click a folder to rename or delete any folder,
+to mark all its messages as read, or to download them all.
 The folder list is read from the server when EMail starts; Folder >
 Refresh folder list reads it again after you changed it elsewhere.
 

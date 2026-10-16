@@ -376,12 +376,44 @@ out=$(run show 1 Big "$U")
 out=$(run sync 1 Big)
 expect "reading updates the server's unread count" "synced: 250 total, 5 unread" "$out"
 
+# Download all messages: every one mirrored and its body on disk, none
+# marked read; and the window stays "all" when the folder is synced again
+out=$(run getall 1 Big)
+expect "download all: the whole folder" "loaded 250 of 250, downloaded 2[0-9][0-9], had [0-9]" "$out"
+out=$(run sync 1 Big)
+expect "download all: downloading doesn't mark them read" "synced: 250 total, 5 unread" "$out"
+python3 - $IMAP <<'PY'
+import imaplib, sys
+m = imaplib.IMAP4("127.0.0.1", int(sys.argv[1]))
+m.login("dana", "secret")
+for i in range(251, 311):           # past the window Load more left (300)
+    m.append("Big", "()", None, b"From: robot@example.com\r\nTo: dana@test.local\r\nSubject: Big %d\r\n\r\nmessage %d\r\n" % (i, i))
+m.logout()
+PY
+out=$(run sync 1 Big)
+expect "download all: the folder mirrors all of it after" "310 total, .* 310 loaded" "$out"
+out=$(run getall 1 Big)
+expect "download all again: only the new ones" "loaded 310 of 310, downloaded 60, had 250" "$out"
+
+# Download again: a copy that came wrong is replaced by the server's
+U=$(uid_of "$(run list 1 Big)" "Big 007")
+P=$(run path 1 Big "$U")
+[ -f "$P" ] && printf 'From: x\r\n\r\ngarbled' > "$P"
+out=$(run show 1 Big "$U")
+expect "download again: the bad copy is what shows first" "garbled" "$out"
+out=$(run again 1 Big "$U")
+expect "download again: ok" "^ok" "$out"
+out=$(run show 1 Big "$U")
+expect "download again: the server's copy" "message 7" "$out"
+out=$(run again 1 Big 999999)
+expect "download again: a message that isn't there" "no message" "$out"
+
 out=$(run allread 1 Big)
 out=$(run list 1 Big)
 if grep -qP "^\d+\tN" <<<"$out"; then FAIL=$((FAIL+1)); echo "FAIL mark all as read: the list still has unread ones"
 else PASS=$((PASS+1)); echo "ok   mark all as read: the list shows them read at once"; fi
 out=$(run sync 1 Big)
-expect "mark all as read reaches the server" "synced: 250 total, 0 unread" "$out"
+expect "mark all as read reaches the server" "synced: 310 total, 0 unread" "$out"
 
 out=$(run clearcache)
 out=$(run show 1 INBOX "$U4")

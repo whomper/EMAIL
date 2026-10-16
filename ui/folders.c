@@ -195,6 +195,8 @@ static void rclick(WIN *w, short mx, short my)
 	if (!fi) {
 		const char *lab[] = { "Check mail", "New message", "Edit account...", "-", "Refresh folder list" };
 		r = popup(mx, my, lab, 5);
+		if (r >= 0)
+			win_redraw_all();	/* not the menu's ghost while it works */
 		if (r == 0) {
 			long n;
 			char server[160];
@@ -217,16 +219,19 @@ static void rclick(WIN *w, short mx, short my)
 		return;
 	}
 	{
-		const char *lab[7];
+		const char *lab[8];
 		int imap = !fi->local, can_delete = imap && !fi->role && !fi->noselect;
 		lab[0] = fi->noselect ? "~Open" : "Open";
 		lab[1] = imap && !fi->noselect ? "Check for new mail" : "~Check for new mail";
 		lab[2] = fi->noselect ? "~Mark all as read" : "Mark all as read";
-		lab[3] = "-";
-		lab[4] = a->pop ? "~New folder..." : "New folder...";
-		lab[5] = can_delete ? "Rename folder..." : "~Rename folder...";
-		lab[6] = can_delete ? "Delete folder..." : "~Delete folder...";
-		r = popup(mx, my, lab, 7);
+		lab[3] = imap && !fi->noselect ? "Download all messages" : "~Download all messages";
+		lab[4] = "-";
+		lab[5] = a->pop ? "~New folder..." : "New folder...";
+		lab[6] = can_delete ? "Rename folder..." : "~Rename folder...";
+		lab[7] = can_delete ? "Delete folder..." : "~Delete folder...";
+		r = popup(mx, my, lab, 8);
+		if (r >= 0)
+			win_redraw_all();
 		switch (r) {
 		case 0:
 			folders_select(a, fi);
@@ -246,21 +251,26 @@ static void rclick(WIN *w, short mx, short my)
 			break;
 		case 2:
 			busy(1);
+			statusf("%s: marking everything in %s as read...", a->name, fi->disp);
 			mail_err[0] = 0;
 			if (!mail_mark_all_read(a, fi, fi == cur_finfo ? cur_folder : 0) && mail_err[0])
 				alert(1, "[1][%s][ OK ]", mail_err);
 			busy(0);
+			status("");
 			if (fi == cur_finfo && cur_folder)
 				list_refresh();
 			folders_build();
 			break;
-		case 4:
-			cmd_new_folder(a);
+		case 3:
+			cmd_download_all(a, fi);
 			break;
 		case 5:
-			cmd_rename_folder(a, fi);
+			cmd_new_folder(a);
 			break;
 		case 6:
+			cmd_rename_folder(a, fi);
+			break;
+		case 7:
 			cmd_delete_folder(a, fi);
 			break;
 		}

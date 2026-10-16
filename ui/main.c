@@ -4,6 +4,7 @@
  * main.c - EMail: start-up, the menu bar, the event loop and the
  * commands behind menus and keys.
  */
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,6 +80,7 @@ static const MBAR_ITEM m_msg[] = {
 	{ "Flag", "^G", C_FLAG },
 	{ "Move to...", "^M", C_MOVE },
 	{ "Delete", "Del", C_DELETE },
+	{ "Download again", 0, C_REFETCH },
 	{ "-", 0, 0 },
 	{ "Send now", "\x01^D", C_SEND },
 	{ "Put in Outbox", "^S", C_SAVEOUT },
@@ -100,6 +102,8 @@ static const MBAR_ITEM m_fold[] = {
 	{ "New folder...", 0, C_NEWFOLDER },
 	{ "Rename folder...", 0, C_RENFOLDER },
 	{ "Delete folder...", 0, C_DELFOLDER },
+	{ "-", 0, 0 },
+	{ "Download all messages", 0, C_GETALL },
 	{ 0, 0, 0 }
 };
 static const MBAR_ITEM m_opts[] = {
@@ -154,12 +158,14 @@ void menu_update(void)
 	enable(C_FLAG, some);
 	enable(C_MOVE, some);
 	enable(C_DELETE, some);
+	enable(C_REFETCH, cur_finfo && !cur_finfo->local && (list_current() || list_marked() > 1));
+	enable(C_GETALL, cur_finfo && !cur_finfo->local && !cur_finfo->noselect);
 	enable(C_SELALL, cur_folder != 0);
 	enable(C_SAVEATT, msg && cur_msg->nparts > 0);
 	enable(C_SEND, ed);
 	enable(C_SAVEOUT, ed);
 	enable(C_ATTACH, ed);
-	enable(C_ABOOK, ed);
+	enable(C_ABOOK, ed || naccts);	/* without a message: write to one */
 	enable(C_NEWFOLDER, cur_acct && !cur_acct->pop);
 	enable(C_DELFOLDER, cur_finfo && !cur_finfo->local && !cur_finfo->role);
 	enable(C_RENFOLDER, cur_finfo && !cur_finfo->local && !cur_finfo->role && !cur_finfo->noselect);
@@ -170,6 +176,16 @@ void menu_update(void)
 }
 
 /* ---------------- status and helpers ---------------- */
+
+void statusf(const char *fmt, ...)
+{
+	char t[120];
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(t, sizeof(t), fmt, ap);
+	va_end(ap);
+	status(t);
+}
 
 void status(const char *msg)
 {
@@ -377,13 +393,12 @@ static void cmd_reply(int all, int forward)
 
 /* Delete, Move and the marks work on the selected messages, or the
    current one. Their UIDs are taken first: the list changes as they go. */
-static void bulk_status(const char *what, long k, long n)
+static void bulk_status(const char *verb, const char *rest, long k, long n)
 {
-	char t[80];
-	if (n > 1) {
-		snprintf(t, sizeof(t), "%s %s of %s...", what, num(k + 1), num(n));
-		status(t);
-	}
+	if (n > 1)		/* "Moving 3 of 12 to Archive..." */
+		statusf("%s %s of %s%s...", verb, num(k + 1), num(n), rest);
+	else
+		statusf("%s the message%s...", verb, rest);
 }
 
 static void cmd_delete(void)
@@ -406,7 +421,7 @@ static void cmd_delete(void)
 	mail_err[0] = 0;
 	for (k = 0; k < n; k++) {
 		HDR *h = fold_get(cur_folder, u[k]);
-		bulk_status("Deleting", k, n);
+		bulk_status("Deleting", "", k, n);
 		if (!h)
 			continue;
 		if (!mail_delete(cur_folder, h))
@@ -444,9 +459,10 @@ static void cmd_move(void)
 	}
 	busy(1);
 	mail_err[0] = 0;
+	snprintf(title, sizeof(title), " to %s", dest->disp);
 	for (k = 0; k < n; k++) {
 		HDR *h = fold_get(cur_folder, u[k]);
-		bulk_status("Moving", k, n);
+		bulk_status("Moving", title, k, n);
 		if (!h)
 			continue;
 		if (!mail_move(cur_folder, h, dest))
@@ -484,11 +500,16 @@ static void cmd_flag(unsigned short flag, int add)
 		}
 	}
 	mail_err[0] = 0;
+	busy(1);
 	for (k = 0; k < n; k++) {
 		HDR *h = fold_get(cur_folder, u[k]);
+		bulk_status(flag == MF_FLAGGED ? (add ? "Flagging" : "Unflagging") : "Marking",
+			    flag == MF_FLAGGED ? "" : add ? " as read" : " as unread", k, n);
 		if (h && !mail_flag(cur_folder, h, flag, add))
 			break;
 	}
+	busy(0);
+	status("");
 	free(u);
 	if (k < n)
 		alert(1, "[1][%s][ OK ]", mail_err);
@@ -496,6 +517,106 @@ static void cmd_flag(unsigned short flag, int add)
 	if (several)
 		list_titles();
 	folders_build();
+}
+
+/* Message > Download again: the server's copy of the messages in place of
+   the one here, which may have come wrong (cut off by a bad line) */
+static void cmd_download_again(void)
+{
+	unsigned long *u;
+	long n, k;
+	HDR *h;
+	if (!cur_folder || cur_finfo->local || !(u = list_targets(&n)))
+		return;
+	busy(1);
+	mail_err[0] = 0;
+	for (k = 0; k < n; k++) {
+		char what[60];
+		h = fold_get(cur_folder, u[k]);
+		if (n > 1)
+			snprintf(what, sizeof(what), "Downloading again: %s of %s", num(k + 1), num(n));
+		else
+			str_copy(what, "Downloading the message again", sizeof(what));
+		if (h && !mail_download(cur_folder, h, 1, what))
+			break;
+	}
+	busy(0);
+	status("");
+	if (k < n)
+		alert(1, "[1][%s][ OK ]", mail_err[0] ? mail_err : "Can't download the message.");
+	/* the one on the screen, as it is now */
+	h = list_current();
+	for (k = 0; h && k < n; k++)
+		if (u[k] == h->uid) {
+			reader_show(h);
+			break;
+		}
+	free(u);
+	menu_update();
+}
+
+/* Folder > Download all messages: every message of the folder on the
+   Atari, to read without the server; the folder mirrors all of them from
+   now on, not the newest opt.page */
+void cmd_download_all(ACCOUNT *a, FINFO *fi)
+{
+	FOLDER *f;
+	long k, n = 0, done = 0, i;
+	int ok = 1, cur = fi == cur_finfo;
+	char what[40];
+	if (!a || !fi || fi->local || fi->noselect)
+		return;
+	if (fi->total > 0)
+		snprintf(what, sizeof(what), fi->total == 1 ? "|The server has 1 message." : "|The server has %s.", num(fi->total));
+	else
+		what[0] = 0;
+	if (alert(1, "[2][Download all the messages|of %s to the Atari?%s%s][Download|Cancel]", fi->disp, what,
+		  opt.keepcache ? "" : "|(Settings: they are kept|only until EMail quits.)") != 1)
+		return;
+	busy(1);
+	mail_err[0] = 0;
+	if (cur && cur_folder) {
+		fold_close(cur_folder);		/* saved first: mirror_all opens it */
+		cur_folder = 0;
+	}
+	ok = mail_mirror_all(a, fi);
+	f = fold_open(a, fi);
+	if (cur)
+		cur_folder = f;
+	if (f) {
+		for (i = 0; i < f->n; i++)
+			if (!(f->h[i].flags & MF_CACHED))
+				n++;
+		for (i = 0, k = 0; ok && i < f->n; i++) {
+			HDR *h = &f->h[i];
+			char what[80];
+			if (h->flags & MF_CACHED)
+				continue;
+			snprintf(what, sizeof(what), "%s: downloading %s of %s", fi->disp, num(k + 1), num(n));
+			k++;
+			ok = mail_download(f, h, 0, what);
+			if (ok)
+				done++;
+		}
+	}
+	busy(0);
+	status("");
+	if (!f)
+		alert(1, "[1][Not enough memory|to open %s.][ OK ]", fi->disp);
+	else if (!ok && !strcmp(mail_err, "stopped"))
+		alert(1, "[1][Stopped: %s of %s|messages downloaded.][ OK ]", num(done), num(n));
+	else if (!ok)
+		alert(1, "[1][%s][ OK ]", mail_err[0] ? mail_err : "Can't download the messages.");
+	else
+		alert(1, "[1][All %s messages of %s|are on the Atari.][ OK ]", num(f->n), fi->disp);
+	if (f && !cur)
+		fold_close(f);
+	if (cur) {
+		list_refresh();
+		win_redraw(&w_list, 0);
+	}
+	folders_build();
+	menu_update();
 }
 
 static void cmd_save_attachment(void)
@@ -580,10 +701,12 @@ void cmd_new_folder(ACCOUNT *a)
 		char server[160];
 		str_copy(server, cur_finfo ? cur_finfo->server : "", sizeof(server));
 		busy(1);
+		statusf("%s: creating the folder %s...", a->name, name);
 		mail_err[0] = 0;
 		if (!mail_folder_create(a, name))
 			alert(1, "[1][%s][ OK ]", mail_err);
 		busy(0);
+		status("");
 		refind_current(server);
 	}
 	folders_build();
@@ -601,11 +724,13 @@ void cmd_rename_folder(ACCOUNT *a, FINFO *fi)
 	was_cur = fi == cur_finfo;
 	str_copy(server, cur_finfo ? cur_finfo->server : "", sizeof(server));
 	busy(1);
+	statusf("%s: renaming %s to %s...", a->name, fi->disp, name);
 	mail_err[0] = 0;
 	to[0] = 0;
 	if (!mail_folder_rename(a, fi, name, to, sizeof(to)) && mail_err[0])
 		alert(1, "[1][%s][ OK ]", mail_err);
 	busy(0);
+	status("");
 	/* the open folder is found again by its (perhaps new) name */
 	if (cur_acct == a)
 		refind_current(was_cur && to[0] ? to : server);
@@ -632,10 +757,12 @@ void cmd_delete_folder(ACCOUNT *a, FINFO *fi)
 		list_load();
 	}
 	busy(1);
+	statusf("%s: deleting the folder %s...", a->name, fi->disp);
 	mail_err[0] = 0;
 	if (!mail_folder_delete(a, fi))
 		alert(1, "[1][%s][ OK ]", mail_err);
 	busy(0);
+	status("");
 	if (cur_acct == a)
 		refind_current(server);
 	folders_build();
@@ -835,11 +962,23 @@ static void command(short cmd)
 	case C_FLAG: cmd_flag(MF_FLAGGED, 1); break;
 	case C_MOVE: cmd_move(); break;
 	case C_DELETE: cmd_delete(); break;
+	case C_REFETCH: cmd_download_again(); break;
+	case C_GETALL: cmd_download_all(cur_acct, cur_finfo); break;
 	case C_SELALL: list_select_all(); break;
 	case C_SEND: editor_send(1); break;
 	case C_SAVEOUT: editor_send(0); break;
 	case C_ATTACH: editor_attach(); break;
-	case C_ABOOK: editor_insert_address(); break;
+	case C_ABOOK:
+		if (w_editor.h > 0) {
+			editor_insert_address();
+		} else {			/* a new message, to the one chosen */
+			ACCOUNT *a = account_for_new();
+			if (a) {
+				editor_open(a, compose_new(a, ""), 0, 0);
+				editor_insert_address();
+			}
+		}
+		break;
 	case C_FOLDERS: main_open(); break;
 	case C_REFRESH: {
 		short i;

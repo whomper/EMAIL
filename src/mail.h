@@ -34,6 +34,13 @@ extern short mail_new_folders;
 
 /* the raw message: from the cache, else downloaded; marks it read */
 char *mail_fetch(FOLDER *f, HDR *h, long *len);
+/* the message into the cache, from the server (IMAP), without marking it
+   read; again: even if it is there, as it may have come wrong; what: the
+   progress line's label ("Inbox: downloading 3 of 40"), or 0 */
+int  mail_download(FOLDER *f, HDR *h, int again, const char *what);
+/* mirror every message of an IMAP folder from now on, not opt.page more
+   at a time (their headers; the bodies are mail_download's) */
+int  mail_mirror_all(ACCOUNT *a, FINFO *fi);
 int  mail_flag(FOLDER *f, HDR *h, unsigned short flags, int add);
 /* read/flag changes not yet on the server, and sending them (one STORE
    per flag); 1 when sent or when they must wait for a connection */

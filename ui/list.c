@@ -467,30 +467,42 @@ static void click(WIN *w, short mx, short my, short clicks, short kstate)
 /* the message menu, shared with the reader */
 void message_menu(short mx, short my, int with_open)
 {
-	HDR *h = cur_folder ? fold_get(cur_folder, cur_uid) : 0;
-	const char *lab[10];
-	short cmd[10], n = 0, r;
+	HDR *h = list_current();
+	int imap = cur_finfo && !cur_finfo->local, shown;
+	const char *lab[12];
+	short cmd[12], n = 0, r;
 	if (nmarks > 1) {
 		/* for all the selected messages */
 		static const char *blab[] = { "Mark as read", "Mark as unread   ^U", "Flag / unflag    ^G",
-					      "-", "Move to...       ^M", "-", "Delete          Del" };
-		static const short bcmd[] = { C_MARKREAD, C_UNREAD, C_FLAG, 0, C_MOVE, 0, C_DELETE };
-		r = popup(mx, my, blab, 7);
-		if (r >= 0 && bcmd[r])
+					      "-", "Move to...       ^M", "Download again", "-", "Delete          Del" };
+		static const short bcmd[] = { C_MARKREAD, C_UNREAD, C_FLAG, 0, C_MOVE, C_REFETCH, 0, C_DELETE };
+		const char *l[8];
+		memcpy(l, blab, sizeof(l));
+		if (!imap)
+			l[5] = "~Download again";
+		r = popup(mx, my, l, 8);
+		if (r >= 0 && bcmd[r]) {
+			win_redraw_all();	/* not the menu's ghost while it works */
 			ui_command(bcmd[r]);
+		}
 		return;
 	}
-	if (!h || !cur_msg)
+	/* a message that didn't come (or came wrong) still has the menu, to
+	   download it again */
+	if (!h && cur_folder)
+		h = fold_get(cur_folder, cur_uid);
+	if (!h)
 		return;
+	shown = cur_msg && cur_uid == h->uid;
 	if (with_open) {
 		lab[n] = "Open";
 		cmd[n++] = -1;
 	}
-	lab[n] = "Reply            ^R";
+	lab[n] = shown ? "Reply            ^R" : "~Reply            ^R";
 	cmd[n++] = C_REPLY;
-	lab[n] = "Reply to all     ^E";
+	lab[n] = shown ? "Reply to all     ^E" : "~Reply to all     ^E";
 	cmd[n++] = C_REPLYALL;
-	lab[n] = "Forward          ^F";
+	lab[n] = shown ? "Forward          ^F" : "~Forward          ^F";
 	cmd[n++] = C_FORWARD;
 	lab[n] = "-";
 	cmd[n++] = 0;
@@ -500,6 +512,8 @@ void message_menu(short mx, short my, int with_open)
 	cmd[n++] = C_FLAG;
 	lab[n] = "Move to...       ^M";
 	cmd[n++] = C_MOVE;
+	lab[n] = imap ? "Download again" : "~Download again";
+	cmd[n++] = C_REFETCH;
 	lab[n] = "-";
 	cmd[n++] = 0;
 	lab[n] = "Delete          Del";
@@ -507,10 +521,15 @@ void message_menu(short mx, short my, int with_open)
 	r = popup(mx, my, lab, n);
 	if (r < 0)
 		return;
-	if (cmd[r] == -1)
-		win_focus(&w_reader);
-	else if (cmd[r])
+	if (cmd[r] == -1) {
+		if (shown)
+			win_focus(&w_reader);
+		else
+			reader_show(h);
+	} else if (cmd[r]) {
+		win_redraw_all();
 		ui_command(cmd[r]);
+	}
 }
 
 static void rclick(WIN *w, short mx, short my)

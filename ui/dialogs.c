@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "ui.h"
+#include "dialog.h"
 #include "bidi.h"
 #include "util.h"
 #include "charset.h"
@@ -1097,7 +1098,7 @@ static short pick_w(const char *title, const char **items, short n, short lw)
 			objc_draw(tree, 0, 8, bx, by, tree[f_count].ob_width, tree[f_count].ob_height);
 			objc_draw(tree, b_ok, 0, x, y, w, h);
 		}
-		r = form_do(tree, 0);
+		r = dlg_do(tree, 0, b_cancel);	/* Esc and Undo: Cancel (3.5) */
 		{
 			int dbl = (r & 0x8000) != 0;
 			r &= 0x7fff;

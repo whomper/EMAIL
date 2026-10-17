@@ -348,6 +348,11 @@ The keys are the AERA programs' own (Ctrl+S saves, Ctrl+W closes, Ctrl+F
 will find), with Mail's on the Mac for the rest. Closing the main window
 ends EMail. Without a help viewer, Help offers the list of keys.
 
+**Esc cancels.** In any dialog box or alert, Esc or Undo does what Cancel
+does (or the button that does nothing, such as Later): nothing is
+deleted, moved, sent or saved, and what was typed is thrown away, even
+with the cursor in a text field.
+
 **Stopping.** While the busy bee shows (checking mail, sending, reading
 a folder), Esc or Undo stops what EMail is waiting for from the server,
 at once rather than after the minute it would wait: the alert then says

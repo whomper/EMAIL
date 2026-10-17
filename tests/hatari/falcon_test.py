@@ -83,7 +83,7 @@ shutil.copy(os.path.join(ROOT, "binary", "EMAIL.PRG"), hd)
 # the full Mozilla list EMail ships, plus the test certificate
 with open(os.path.join(hd, "CACERT.PEM"), "wb") as f:
     f.write(open(os.path.join(ROOT, "binary", "CACERT.PEM"), "rb").read() + open(cert, "rb").read())
-shutil.copy(os.path.join(ROOT, "tools", "fakesting", "FAKESTNG.PRG"), os.path.join(hd, "AUTO"))
+rig.fakesting(os.path.join(hd, "AUTO"))
 if reuse:
     shutil.copy(os.path.join(keep, "ROOTS.DAT"), hd)
 elif os.environ.get("NOCACHE") != "1":
@@ -104,8 +104,7 @@ for p in (fifo_out, fifo_in):
     if os.path.exists(p):
         os.remove(p)
     os.mkfifo(p)
-bridge = subprocess.Popen([sys.executable, os.path.join(HERE, "serial_bridge.py"), fifo_out, fifo_in],
-                          stderr=open(os.path.join(work, "bridge.log"), "w"))
+bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
 # 4 MB: Falcon mode needs room for TLS (Falcons came with 1, 4 or 14 MB)

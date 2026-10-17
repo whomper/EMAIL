@@ -170,13 +170,13 @@ common/   code shared with the other AERA programs, from AERA-Atari: the TOS run
           system calls, a small C library, AES/VDI, TCP over STinG/STiK or MiNTnet with a DNS
           client), connections and TLS (tls.c), charsets, bidi, dates and time zones, passwords,
           GEM building blocks (menus, alerts, the About box, help, iconify, clipboard, drag and
-          drop), BearSSL, the DSP RSA program, Mozilla's root certificates, build tools.
+          drop), BearSSL, the DSP RSA program, Mozilla's root certificates, build tools,
+          FAKESTNG.PRG for the Hatari tests (tools/fakesting).
           Change it in AERA-Atari, then run tools/sync-common.sh
 gateway/  the Raspberry Pi gateways (emailgate.py is EMail's) and aera-gateway, their installer:
           a copy of AERA-Gateway's; change it there, then run tools/sync-gateway.sh
 tests/    unit, fuzz and integration tests, the Hatari rigs (tests/hatari)
-tools/    the icon generator, sync-common.sh, sync-gateway.sh, bump.py, the TLS measurements (tlsbench),
-          FAKESTNG.PRG (for testing in Hatari only)
+tools/    the icon generator, sync-common.sh, sync-gateway.sh, bump.py, the TLS measurements (tlsbench)
 icons/    the desktop icon (RSC and ICN files), from tools/icon
 docs/     the user guide (GUIDE.md, the source of EMAIL.HYP) and the pictures
 binary/   what make builds for the Atari (not committed: the releases have it)
@@ -203,7 +203,7 @@ FALCON=1 make itest # Falcon mode: EMail's own TLS, implicit TLS and STARTTLS
 Xvfb and xdotool:
 
 ```sh
-make -C tools/fakesting
+make -C common/tools/fakesting
 tests/hatari/net_test.py /tmp/mail-net etos512us.img   # Falcon, real servers
 tests/hatari/stop_test.py /tmp/mail-stop etos512us.img # Esc stops a server that never answers
 tests/hatari/ui_tour.py WORKDIR etos512us.img          # screenshots of the interface
@@ -214,8 +214,9 @@ tests/hatari/falcon_test.py /tmp/mail-tls etos512us.img --dsp emu   # Falcon mod
 `net_test.py` boots an emulated Falcon, where EMail logs in to Dovecot, mirrors the inbox, opens a
 Hebrew message and sends a Hebrew reply; the test checks the reply and its copy in Sent on the server.
 `select_test.py`, `rename_test.py` and `colour_tour.py` run the same way. Hatari has no network card,
-so `FAKESTNG.PRG` stands in for STinG and carries EMail's connections over the emulated serial port to
-`serial_bridge.py`. It's for the emulator only; never install it on a real Atari.
+so `FAKESTNG.PRG` (the AERA apps' shared one, in `common/tools/fakesting`) stands in for STinG and
+carries EMail's connections over the emulated serial port to `serial_bridge.py` next to it. It's for
+the emulator only; never install it on a real Atari.
 
 ## Licence
 

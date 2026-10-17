@@ -62,7 +62,7 @@ def main():
     stop = threading.Event()
     threading.Thread(target=silent_server, args=(stop,), daemon=True).start()
     shutil.copy(os.path.join(ROOT, "binary", "EMAIL.PRG"), hd)
-    shutil.copy(os.path.join(ROOT, "tools", "fakesting", "FAKESTNG.PRG"), os.path.join(hd, "AUTO"))
+    rig.fakesting(os.path.join(hd, "AUTO"))
     with open(os.path.join(hd, "EMAIL.INF"), "w", newline="") as f:
         f.write("[options]\r\ntz=180\r\nlog=1\r\n[account]\r\nname=Dana\r\nfullname=Dana Falcon\r\n"
                 "email=dana@test.local\r\nin=imap\r\nhost=127.0.0.1\r\nport=%d\r\nuser=dana\r\n"
@@ -70,8 +70,7 @@ def main():
     fifo_out, fifo_in = os.path.join(work, "st_out"), os.path.join(work, "st_in")
     for p in (fifo_out, fifo_in):
         os.mkfifo(p)
-    bridge = subprocess.Popen([sys.executable, os.path.join(HERE, "serial_bridge.py"), fifo_out, fifo_in],
-                              stderr=open(os.path.join(work, "bridge.log"), "w"))
+    bridge = rig.bridge(work, fifo_out, fifo_in)
     r = rig.Rig(work, tos, machine="st", serial=(fifo_out, fifo_in), extra=("--memsize", "4", "--monitor", "mono"))
     log = os.path.join(hd, "EMAIL.LOG")
     try:

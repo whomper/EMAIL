@@ -8,6 +8,7 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 import time
 
 # ST scancodes (US layout)
@@ -20,6 +21,21 @@ SCAN["\\"] = 43
 SHIFTED = {"!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7", "*": "8",
            "(": "9", ")": "0", "_": "-", "+": "=", ":": ";", '"': "'", "<": ",", ">": ".",
            "?": "/", "{": "[", "}": "]", "|": "\\", "~": "`"}
+
+# FAKESTNG.PRG and its bridge are common's: make -C common/tools/fakesting
+FAKESTING = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "common", "tools", "fakesting")
+
+
+def fakesting(auto):
+    """Put FAKESTNG.PRG in drive C:'s AUTO folder."""
+    shutil.copy(os.path.join(FAKESTING, "FAKESTNG.PRG"), auto)
+
+
+def bridge(work, fifo_out, fifo_in):
+    """Start FAKESTNG's other end on Hatari's serial FIFOs, logging to work/bridge.log."""
+    return subprocess.Popen([sys.executable, os.path.join(FAKESTING, "serial_bridge.py"), fifo_out, fifo_in],
+                            stderr=open(os.path.join(work, "bridge.log"), "w"))
+
 
 K = dict(RETURN=0x1c, ESC=0x01, TAB=0x0f, BACKSPACE=0x0e, DELETE=0x53, UP=0x48, DOWN=0x50,
          LEFT=0x4b, RIGHT=0x4d, HOME=0x47, HELP=0x62, F10=0x44, CTRL=0x1d, SHIFT=0x2a, ALT=0x38)

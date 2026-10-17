@@ -87,7 +87,7 @@ try:
     r.key(K["F10"])
     r.type(" Dana, this reply comes from a Falcon.")
     r.key(K["RETURN"])
-    time.sleep(0.5)
+    time.sleep(8)                        # an 8 MHz ST is still typing it
     r.shot("n3-reply")
     r.key(rig.SCAN["d"], shift=True, ctrl=True)   # Shift+^D: send now
     time.sleep(35)

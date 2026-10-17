@@ -235,6 +235,20 @@ int av_message(const short *msg, const char **s)
 	return msg[0] == PEOPLE ? AV_PEOPLE : AV_START;
 }
 
+void (*av_people_hook)(const char *s, short from);
+
+int av_modal_message(const short *msg)
+{
+	const char *s;
+	int r;
+	if (msg[0] != PEOPLE && msg[0] != AV_STARTED)
+		return 0;
+	r = av_message(msg, &s);
+	if (r == AV_PEOPLE && av_people_hook)
+		av_people_hook(s, msg[1]);
+	return r == AV_PEOPLE || r == AV_DONE;
+}
+
 int av_people_ready(void)
 {
 	if (people_out && tos_ms() - people_at >= PEOPLE_WAIT) {

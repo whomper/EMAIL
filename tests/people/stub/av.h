@@ -6,4 +6,5 @@
 int av_people(short id, const char *text);
 int av_people_ready(void);
 const char *av_name(void);
+extern void (*av_people_hook)(const char *s, short from);
 #endif

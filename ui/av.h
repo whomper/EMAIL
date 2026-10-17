@@ -55,6 +55,11 @@ int av_send(const char *name, const char *text);
 int av_people(short id, const char *text);
 int av_people_ready(void);
 long av_people_lost(void);
+/* in a loop of the shared code's own (busy.c): a PEOPLE goes to
+   av_people_hook (people_init sets it) and our PEOPLE's AV_STARTED is
+   taken; 1 when the message was one of those, 0 for the app's */
+extern void (*av_people_hook)(const char *s, short from);
+int av_modal_message(const short *msg);
 /* the name the AES knows us by, without its padding ("ECAL", "ECALST") */
 const char *av_name(void);
 

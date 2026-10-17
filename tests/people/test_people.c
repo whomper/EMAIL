@@ -210,17 +210,53 @@ int main(void)
 	{
 		int lines = 0;
 		for (i = 0; i < nsent; i++) {
-			CHECK(!strncmp(sent[i], "names:\n", 7) || !strncmp(sent[i], "names:p", 7), "each command starts names:");
+			CHECK(!strncmp(sent[i], "names:\n", 7), "each command starts names: and a line break");
 			CHECK(sent_to[i] == 7, "to the asker");
 			for (p = sent[i]; (p = strchr(p, '\n')) != 0; p++)
 				lines++;
 		}
-		CHECK(lines == 40, "every line, none cut");
+		CHECK(lines == 40 + nsent, "every line, none cut (and the break after each names:)");
 	}
 	ready = 1;
 	people_answer(7, "pick:", 0, 0);
 	people_answer(7, 0, 0, 0);
 	CHECK(!strcmp(sent[nsent - 1], "pick:"), "a cancelled pick is a bare pick:");
+
+	/* round trip: what EContact's people_answer() sends, the asker's
+	   people_message() takes (EMail found it didn't, 17 Oct 2026) */
+	people_init(16, 2048, names_came, picked);
+	people_message("changed:", 5);
+	ready = 1;
+	nsent = 0;
+	CHECK(people_name("rt1@x.org") == 0 && people_name("rt2@x.org") == 0, "round trip: asked");
+	people_poll();
+	ready = 1;
+	{
+		char q[1100], answer[1100];
+		strcpy(q, sent[nsent - 1]);
+		CHECK(people_question(q, asker, sizeof(asker), &rest) == PQ_NAMES, "round trip: the question read");
+		people_answer(5, "names:", 0, 0);
+		p = rest;
+		while ((p = people_next(p, a, sizeof(a))) != 0)
+			people_answer(5, 0, a, !strcmp(a, "rt1@x.org") ? "Round Trip" : "");
+		people_answer(5, 0, 0, 0);
+		strcpy(answer, sent[nsent - 1]);
+		ready = 1;
+		CHECK(people_message(answer, 5) == 1, "round trip: the answer taken");
+		CHECK(people_name("rt1@x.org") && !strcmp(people_name("rt1@x.org"), "Round Trip"), "round trip: the name arrived");
+		CHECK(people_name("rt2@x.org") && !strcmp(people_name("rt2@x.org"), ""), "round trip: unknown arrived empty");
+		pick_calls = 0;
+		people_answer(5, "pick:", 0, 0);
+		people_answer(5, 0, "rt1@x.org", "Round Trip");
+		people_answer(5, 0, 0, 0);
+		strcpy(answer, sent[nsent - 1]);
+		ready = 1;
+		CHECK(people_message(answer, 5) == 1 && pick_calls == 1 && pick_n == 1 &&
+		      !strcmp(pick_got[0].name, "Round Trip"), "round trip: a pick arrived");
+		people_answer(5, "changed:", 0, 0);
+		people_answer(5, 0, 0, 0);
+		CHECK(!strcmp(sent[nsent - 1], "changed:"), "changed: sent bare");
+	}
 
 	printf("%s\n", fails ? "people_ask: FAILED" : "people_ask: ok");
 	return fails != 0;

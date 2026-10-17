@@ -26,7 +26,7 @@ CROSS   ?= m68k-linux-gnu-
 CC      := $(CROSS)gcc
 GCCINC  := $(shell $(CC) -print-file-name=include)
 CFLAGS  := -m68000 -Os -fomit-frame-pointer -ffreestanding -fno-builtin \
-           -fno-pic -fno-pie -fno-tree-loop-distribute-patterns -fno-store-merging \
+           -fno-pic -fno-pie -fno-tree-loop-distribute-patterns -fno-store-merging -fno-expensive-optimizations \
            -fno-asynchronous-unwind-tables -Wall -Wno-pointer-sign \
            -DMAIL_TOS -nostdinc -isystem $(GCCINC) -Iatari/include -Icommon/atari/include \
            -Isrc -Icommon/src -Iatari -Icommon/atari -Iui -Icommon/ui -Icommon/third_party/bearssl/inc

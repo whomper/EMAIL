@@ -16,6 +16,8 @@
 #define CMD_MAX		1023		/* av.c's buffer, less its 0 */
 #define WAIT_ANSWER	4000UL		/* asked and no answer: show the address */
 #define WAIT_ABSENT	30000UL		/* no EContact: ask again after this */
+#define WAIT_LOST	5000UL		/* asked, no answer (taken by a loop that
+					   doesn't read messages): again after this */
 
 enum { E_FREE, E_QUEUED, E_ASKED, E_KNOWN, E_ABSENT };
 
@@ -23,6 +25,7 @@ typedef struct {
 	char addr[PEOPLE_ADDR];
 	char name[PEOPLE_NAME];
 	char state;
+	char lost;			/* absent because the answer never came */
 	unsigned long at;		/* asked, or found absent (tos_ms) */
 	unsigned long used;		/* for letting the oldest go */
 } ENTRY;
@@ -61,11 +64,17 @@ static void copy(char *d, const char *s, int size)
 	d[i] = 0;
 }
 
+static void hook(const char *s, short from)
+{
+	people_message(s, from);
+}
+
 int people_init(int n, long outbox_bytes, void (*names_came)(void),
 		void (*picked)(const PERSON *list, int n))
 {
 	on_names = names_came;
 	on_picked = picked;
+	av_people_hook = hook;
 	if (!cache && n > 0) {
 		cache = calloc((size_t)n, sizeof(ENTRY));
 		ncache = cache ? n : 0;
@@ -388,9 +397,10 @@ static void ask(void)
 		ENTRY *e = &cache[i];
 		if (e->state == E_ASKED && now - e->at >= WAIT_ANSWER) {
 			e->state = E_ABSENT;	/* no answer: show the address */
+			e->lost = 1;
 			e->at = now;
 			absent = 1;
-		} else if (e->state == E_ABSENT && now - e->at >= WAIT_ABSENT)
+		} else if (e->state == E_ABSENT && now - e->at >= (e->lost ? WAIT_LOST : WAIT_ABSENT))
 			e->state = E_QUEUED;
 		if (e->state == E_QUEUED)
 			any = 1;
@@ -404,6 +414,7 @@ static void ask(void)
 		for (i = 0; i < ncache; i++)
 			if (cache[i].state == E_QUEUED) {
 				cache[i].state = E_ABSENT;
+				cache[i].lost = 0;
 				cache[i].at = now;
 			}
 		if (on_names)

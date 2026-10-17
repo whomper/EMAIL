@@ -22,6 +22,7 @@ static short sent_to[16];
 static int nsent, names_calls, pick_calls, pick_n;
 static PERSON pick_got[8];
 static int fails;
+void (*av_people_hook)(const char *s, short from);
 
 u32 tos_ms(void) { return now; }
 short appl_find(const char *n) { return !strcmp(n, "ECONTACT") ? econtact_id : -1; }
@@ -94,6 +95,7 @@ int main(void)
 	CHECK(strlen(line + 150) == 3 + 1 + 63 + 1, "names cut to 63 bytes");
 
 	CHECK(people_init(16, 2048, names_came, picked), "init");
+	CHECK(av_people_hook != 0, "init sets the hook for busy.c's loop");
 
 	/* names: asked, shown as 0 meanwhile, then known */
 	CHECK(people_name("grace@x.org") == 0, "unknown yet: 0");
@@ -135,9 +137,12 @@ int main(void)
 	now += 4100;
 	people_poll();
 	CHECK(!strcmp(people_name("late@x.org"), ""), "no answer: shown as the address");
-	now += 30100;
+	now += 4000;
 	people_poll();
-	CHECK(nsent == before + 2 && strstr(sent[nsent - 1], "late@x.org"), "asked again after 30 s");
+	CHECK(nsent == before + 1, "not asked again within 5 s");
+	now += 1100;
+	people_poll();
+	CHECK(nsent == before + 2 && strstr(sent[nsent - 1], "late@x.org"), "a lost answer: asked again after 5 s");
 	econtact_answers();
 
 	/* changed: forgets, and the next look asks again */
@@ -164,6 +169,19 @@ int main(void)
 	people_name("z@z");
 	people_poll();
 	CHECK(!strcmp(people_name("z@z"), ""), "no EContact: plain address");
+	{
+		int was = nsent;
+		econtact_id = 5;
+		ready = 1;
+		now += 6000;
+		people_poll();
+		CHECK(nsent == was, "no EContact: not asked again after 6 s");
+		now += 25000;
+		people_poll();
+		CHECK(nsent == was + 1, "no EContact: asked again after 30 s");
+		econtact_id = -1;
+		ready = 1;
+	}
 	CHECK(!people_pick(""), "no pick without EContact");
 	econtact_id = 5;
 
@@ -225,6 +243,9 @@ int main(void)
 	/* round trip: what EContact's people_answer() sends, the asker's
 	   people_message() takes (EMail found it didn't, 17 Oct 2026) */
 	people_init(16, 2048, names_came, picked);
+	now += 4100;			/* questions left unanswered above time out */
+	ready = 1;
+	people_poll();
 	people_message("changed:", 5);
 	ready = 1;
 	nsent = 0;

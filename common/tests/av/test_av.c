@@ -41,6 +41,16 @@ short appl_write(short id, short len, const void *buf)
 	return 1;
 }
 
+static int hooked;
+static char hook_s[64];
+static short hook_from;
+static void hook(const char *s, short from)
+{
+	hooked++;
+	strncpy(hook_s, s, sizeof(hook_s) - 1);
+	hook_from = from;
+}
+
 static void check(int ok, const char *what)
 {
 	checks++;
@@ -242,6 +252,25 @@ int main(void)
 		check(av_message(msg, &s) == AV_PEOPLE && s && !strcmp(s, text2), "PEOPLE in: AV_PEOPLE with the string");
 		check(writes == 1 && sent_to == 3 && sent[0] == 0x4738 && sent[3] == msg[3] && sent[4] == msg[4],
 		      "PEOPLE in: AV_STARTED to the sender");
+	}
+	/* in busy.c's loop: PEOPLE to the hook, our AV_STARTED taken, the rest the app's */
+	{
+		short pm[8] = { 0x4E43, 3, 0, 0, 0, 0, 0, 0 }, redraw[8] = { 20, 3, 0, 0, 0, 0, 0, 0 };
+		const char *t = "names:\na@b\tAnn\n";
+		pm[3] = (short)((unsigned long)t >> 16);
+		pm[4] = (short)(unsigned long)t;
+		av_people_hook = hook;
+		hooked = 0;
+		check(av_modal_message(pm) == 1 && hooked == 1 && !strcmp(hook_s, t) && hook_from == 3,
+		      "av_modal_message: PEOPLE to the hook, with the sender");
+		check(av_modal_message(redraw) == 0 && hooked == 1, "av_modal_message: a WM_REDRAW is the app's");
+		av_people(1, "names:EMAIL q@r");
+		{
+			short ack[8] = { 0x4738, 1, 0, 0, 0, 0, 0, 0 };
+			ack[3] = sent[3];
+			ack[4] = sent[4];
+			check(av_modal_message(ack) == 1 && av_people_ready(), "av_modal_message: our AV_STARTED taken");
+		}
 	}
 	av_init("EMAIL|EMAILST");
 	check(!strcmp(av_name(), "EMAIL"), "av_name: our AES name without padding");

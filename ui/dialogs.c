@@ -429,28 +429,12 @@ static int selected(short i)
 
 /* ---------------- account ---------------- */
 
-static void sig_to_line(char *d, const char *s, int size)
-{
-	int o = 0;
-	for (; *s && o < size - 1; s++)
-		d[o++] = *s == '\n' ? '|' : *s;
-	d[o] = 0;
-}
-
-static void line_to_sig(char *d, const char *s, int size)
-{
-	int o = 0;
-	for (; *s && o < size - 1; s++)
-		d[o++] = *s == '|' ? '\n' : *s;
-	d[o] = 0;
-}
-
 int dlg_account(ACCOUNT *a)
 {
 	static char name[32], full[32], email[44], host[40], port[7], user[44], pass[32],
-		    shost[40], sport[7], suser[44], spass[32], sig[50], sig2[50];
+		    shost[40], sport[7], suser[44], spass[32];
 	short f_name, f_full, f_email, f_imap, f_pop, f_host, f_port, f_user, f_pass, f_leave,
-	      f_shost, f_sport, f_suser, f_spass, f_sig, f_sig2, b_ok, b_del, r;
+	      f_shost, f_sport, f_suser, f_spass, b_ok, b_del, r;
 
 	str_copy(name, a->name, sizeof(name));
 	str_copy(full, a->fullname, sizeof(full));
@@ -468,18 +452,8 @@ int dlg_account(ACCOUNT *a)
 	snprintf(sport, sizeof(sport), "%u", opt.falcon ? acct_port(a, 1) : a->smtpport);
 	str_copy(suser, opt.falcon ? a->dsmtpuser : a->smtpuser, sizeof(suser));
 	str_copy(spass, opt.falcon ? a->dsmtppass : a->smtppass, sizeof(spass));
-	/* two lines to edit; a third and more stay in line 2 after a "|" */
-	{
-		const char *nl = strchr(a->signature, '\n');
-		long n1 = nl ? nl - a->signature : (long)strlen(a->signature);
-		if (n1 > (long)sizeof(sig) - 1)
-			n1 = sizeof(sig) - 1;
-		memcpy(sig, a->signature, n1);
-		sig[n1] = 0;
-		sig_to_line(sig2, nl ? nl + 1 : "", sizeof(sig2));
-	}
 
-	d_begin(62, 23);
+	d_begin(62, 21);
 	d_add(G_STRING, 0, 0, (long)"Mail account", 2, 1, 12, 1);
 	d_text(16, 1, opt.falcon ? "Falcon mode: the provider's servers, login"
 				 : "the Pi gateway's servers and login");
@@ -513,17 +487,13 @@ int dlg_account(ACCOUNT *a)
 	d_text(2, 16, "Password:");
 	f_spass = d_pass(17, 16, spass, 30);
 	d_text(17, 17, "(empty: as incoming, \"-\": no login)");
-	d_text(2, 18, "Signature:");
-	f_sig = d_edit(13, 18, sig, 46, 'X');
-	f_sig2 = d_edit(13, 19, sig2, 46, 'X');
-	d_text(13, 20, "(two lines; a \"|\" in line 2 starts another)");
 
-	b_del = d_button(2, 21, 10, "Delete", EXIT);
-	d_button(38, 21, 10, "Cancel", EXIT);
-	b_ok = d_button(50, 21, 10, "OK", EXIT | DEFAULT);
+	b_del = d_button(2, 19, 10, "Delete", EXIT);
+	d_button(38, 19, 10, "Cancel", EXIT);
+	b_ok = d_button(50, 19, 10, "OK", EXIT | DEFAULT);
 	d_end();
 	(void)f_name; (void)f_full; (void)f_email; (void)f_host; (void)f_port; (void)f_user;
-	(void)f_pass; (void)f_shost; (void)f_sport; (void)f_suser; (void)f_spass; (void)f_sig; (void)f_sig2;
+	(void)f_pass; (void)f_shost; (void)f_sport; (void)f_suser; (void)f_spass;
 	(void)f_imap;
 
 	r = d_do(f_name);
@@ -579,11 +549,6 @@ int dlg_account(ACCOUNT *a)
 		str_copy(a->smtppass, spass, sizeof(a->smtppass));
 	}
 	acct_fill_logins(a);		/* a new account: the other mode starts the same */
-	{
-		char both[110];
-		snprintf(both, sizeof(both), sig2[0] ? "%s|%s" : "%s", sig, sig2);
-		line_to_sig(a->signature, both, sizeof(a->signature));
-	}
 	return 1;
 }
 
@@ -595,6 +560,9 @@ int dlg_account(ACCOUNT *a)
  * crossed when on, clicked on the box or its words) and framed fields. */
 
 static char s_zone[40], s_zlabel[42], s_check[4], s_page[5], s_wrap[3];
+#define SIG_ROWS 4
+#define SIG_W 40
+static char s_sig[SIG_ROWS][SIG_W + 1];	/* the signature, a line a row */
 static short s_on[6];			/* keep, log, hebrew, falcon, dsp, colour */
 enum { T_KEEP, T_LOG, T_HEB, T_FALCON, T_DSP, T_COLOUR };
 
@@ -874,6 +842,34 @@ static void settings_load(void)
 	s_on[T_FALCON] = dlg_falcon;
 	s_on[T_DSP] = opt.dsp;
 	s_on[T_COLOUR] = opt.colour;
+	{
+		const char *p = opt.signature;
+		short k;
+		for (k = 0; k < SIG_ROWS; k++) {
+			const char *nl = strchr(p, '\n');
+			long n = nl ? nl - p : (long)strlen(p);
+			if (n > SIG_W)
+				n = SIG_W;
+			memcpy(s_sig[k], p, n);
+			s_sig[k][n] = 0;
+			p = nl ? nl + 1 : p + strlen(p);
+		}
+	}
+}
+
+/* the rows back into one signature, without the empty rows at its end */
+static void sig_store(void)
+{
+	short k, last = -1;
+	opt.signature[0] = 0;
+	for (k = 0; k < SIG_ROWS; k++)
+		if (s_sig[k][0])
+			last = k;
+	for (k = 0; k <= last; k++) {
+		if (k)
+			strcat(opt.signature, "\n");
+		strcat(opt.signature, s_sig[k]);
+	}
 }
 
 /* the settings of each part, at (x, y); fields in one column. Each
@@ -897,6 +893,18 @@ static void part_writing(short x, short y)
 	d_add(G_STRING, 0, 0, (long)"Wrap my lines at column", x, ROW(0), 23, 1);
 	d_field(x + FX, ROW(0), s_wrap, 2, '9');
 	d_tick(x, ROW(1), "Start with the Hebrew keyboard", T_HEB);
+}
+
+/* four rows in one frame, as one box to write in */
+static void part_signature(short x, short y)
+{
+	short k;
+	rows_at(y);
+	d_add(G_BOX, 0, 0, 0x00FF1100L, x, ROW(0), SIG_W, SIG_ROWS);
+	for (k = 0; k < SIG_ROWS; k++)
+		d_edit(x, (short)((y + k) | (2 << 8)), s_sig[k], SIG_W, 'X');
+	d_add(G_STRING, 0, 0, (long)"Added below new messages, replies and", x, (short)(y + SIG_ROWS + 1), 37, 1);
+	d_add(G_STRING, 0, 0, (long)"forwards from every account.", x, (short)(y + SIG_ROWS + 2), 28, 1);
 }
 
 static void part_look(short x, short y)
@@ -926,21 +934,21 @@ static void part_connection(short x, short y)
 
 static short settings_sidebar(short *ok)
 {
-	static const char *names[] = { "  Mail", "  Writing", "  Look", "  Connection" };
+	static const char *names[] = { "  Mail", "  Writing", "  Signature", "  Look", "  Connection" };
 	short k, box, from, gap = (short)(gl_hchar / 2);
 	settings_begin(SX + 42, 16);
 	d_band(SX + 42, " Settings");
 	/* the list: plain words on white, the chosen one in a black bar, a
 	   line between it and the settings */
 	d_add(G_BOX, 0, 0, 0x00001171L, SW, 1, (short)(0 | (1 << 8)), 15);
-	for (k = 0; k < 4; k++) {
+	for (k = 0; k < 5; k++) {
 		npages++;
 		page_tab[npages] = d_add(G_BOXTEXT, TOUCHEXIT, 0, (long)d_ted(names[k], 0, 0x1180),
 					 (short)(0 | (2 << 8)), (short)((2 + k * 2) | ((k * gap) << 8)),
 					 (short)((SW - 1) | (6 << 8)), 1);
 	}
 	box = d_add(G_IBOX, 0, 0, 0, SX - 1, 2, 42, 12);
-	for (k = 1; k <= 4; k++) {
+	for (k = 1; k <= 5; k++) {
 		from = nobj;
 		adding_page = k;
 		d_add(G_STRING, 0, 0, (long)(names[k - 1] + 2), SX, 2, (short)strlen(names[k - 1] + 2), 1);
@@ -950,6 +958,8 @@ static short settings_sidebar(short *ok)
 		else if (k == 2)
 			part_writing(SX, 4);
 		else if (k == 3)
+			part_signature(SX, 4);
+		else if (k == 4)
 			part_look(SX, 4);
 		else
 			part_connection(SX, 4);
@@ -987,6 +997,7 @@ int dlg_settings(void)
 	dlg_falcon = s_on[T_FALCON];
 	opt.dsp = s_on[T_DSP];
 	opt.colour = s_on[T_COLOUR];
+	sig_store();
 	return 1;
 }
 

@@ -100,10 +100,9 @@ os.makedirs(os.path.join(hd, "AUTO"))
 shutil.copy(os.path.join(ROOT, "binary", "EMAIL.PRG"), hd)
 rig.fakesting(os.path.join(hd, "AUTO"))
 with open(os.path.join(hd, "EMAIL.INF"), "w", newline="") as f:
-    f.write("[OPTIONS]\r\nTIMEZONE=Europe/London\r\nHEBREW=0\r\n[ACCOUNT]\r\nNAME=Home\r\n"
+    f.write("[OPTIONS]\r\nTIMEZONE=Europe/London\r\nHEBREW=0\r\nSIGNATURE=Sent from my Falcon\r\n[ACCOUNT]\r\nNAME=Home\r\n"
             "FULLNAME=Dana Falcon\r\nEMAIL=dana@test.local\r\nIN=imap\r\nHOST=127.0.0.1\r\nPORT=%d\r\n"
-            "USER=dana\r\nPASS=secret\r\nSMTPHOST=127.0.0.1\r\nSMTPPORT=%d\r\n"
-            "SIGNATURE=Sent from my Falcon\r\n" % (IMAP, SMTP))
+            "USER=dana\r\nPASS=secret\r\nSMTPHOST=127.0.0.1\r\nSMTPPORT=%d\r\n" % (IMAP, SMTP))
 
 fifo_out, fifo_in = os.path.join(work, "st_out"), os.path.join(work, "st_in")
 for p in (fifo_out, fifo_in):

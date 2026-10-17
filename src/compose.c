@@ -357,11 +357,12 @@ char *compose_for_smtp(const char *raw, long len, long *outlen)
 	return sb_steal(&b);
 }
 
-static void add_signature(SBUF *b, ACCOUNT *a)
+/* the one signature, Options > Settings > Signature */
+static void add_signature(SBUF *b)
 {
-	if (a->signature[0]) {
+	if (opt.signature[0]) {
 		sb_adds(b, "\n\n-- \n");
-		sb_adds(b, a->signature);
+		sb_adds(b, opt.signature);
 	}
 }
 
@@ -370,7 +371,7 @@ char *compose_new(ACCOUNT *a, const char *to)
 	SBUF b;
 	sb_init(&b);
 	sb_printf(&b, "To: %s\nCc: \nSubject: \n\n", to ? to : "");
-	add_signature(&b, a);
+	add_signature(&b);
 	return sb_steal(&b);
 }
 
@@ -447,7 +448,7 @@ char *compose_mailto(ACCOUNT *a, const char *url)
 	sb_adds(&b, subject);
 	sb_adds(&b, "\n\n");
 	sb_adds(&b, body);
-	add_signature(&b, a);
+	add_signature(&b);
 	return sb_steal(&b);
 }
 
@@ -500,7 +501,7 @@ char *compose_reply(ACCOUNT *a, MSG *m, int all)
 	/* an empty line for the cursor above the quote */
 	sb_printf(&b, "\n\n\n\nOn %s,\n%s wrote:\n", m->date, m->from);
 	quote_text(&b, m->text ? m->text : "");
-	add_signature(&b, a);
+	add_signature(&b);
 	return sb_steal(&b);
 }
 
@@ -517,6 +518,6 @@ char *compose_forward(ACCOUNT *a, MSG *m, const char *eml)
 	sb_adds(&b, "\n\n---------- Forwarded message ----------\n");
 	sb_printf(&b, "From: %s\nDate: %s\nSubject: %s\nTo: %s\n\n", m->from, m->date, m->subject, m->to);
 	sb_adds(&b, m->text ? m->text : "");
-	add_signature(&b, a);
+	add_signature(&b);
 	return sb_steal(&b);
 }

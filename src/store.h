@@ -47,7 +47,6 @@ typedef struct {
 	unsigned short smtpport;
 	char smtpuser[96], smtppass[64];	/* empty user: same as above; "-": no login */
 	char sentname[96];	/* IMAP Sent folder override */
-	char signature[256];	/* \n separated, Atari charset */
 	/* Falcon mode: the provider's own servers, reached with TLS */
 	char dhost[64];
 	unsigned short dport;
@@ -95,6 +94,7 @@ typedef struct {
 	short dsp;		/* Falcon mode may use the DSP (else the 68030 does it all) */
 	char tzname[40];	/* the time zone, an IANA name ("Asia/Jerusalem") */
 	short colour;		/* colours, on screens with 16 or more */
+	char signature[256];	/* below new messages, every account's; \n separated, Atari charset */
 	char workdir[200];
 } OPTIONS;
 

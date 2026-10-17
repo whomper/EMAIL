@@ -79,6 +79,7 @@ cat > "$W/EMAIL.INF" <<INF
 [options]
 tz=180
 headers=300
+signature=Sent from my Atari Falcon
 [account]
 name=Test IMAP
 fullname=Yaary
@@ -90,7 +91,6 @@ user=dana
 pass=secret
 smtphost=127.0.0.1
 smtpport=$SMTP
-signature=Sent from my Atari Falcon
 [account]
 name=Test POP
 email=dana@test.local

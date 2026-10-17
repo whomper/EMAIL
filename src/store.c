@@ -278,7 +278,6 @@ static void set_acct(ACCOUNT *a, const char *k, const char *v)
 	else if (!strcmp(k, "smtpuser")) str_copy(a->smtpuser, tmp, sizeof(a->smtpuser));
 	else if (!strcmp(k, "smtppass")) unseal(a->smtppass, tmp, sizeof(a->smtppass));
 	else if (!strcmp(k, "sent")) str_copy(a->sentname, tmp, sizeof(a->sentname));
-	else if (!strcmp(k, "signature")) str_copy(a->signature, tmp, sizeof(a->signature));
 	else if (!strcmp(k, "dhost")) str_copy(a->dhost, tmp, sizeof(a->dhost));
 	else if (!strcmp(k, "dport")) a->dport = (unsigned short)atoi(tmp);
 	else if (!strcmp(k, "dsmtphost")) str_copy(a->dsmtphost, tmp, sizeof(a->dsmtphost));
@@ -410,6 +409,7 @@ static void set_opt(const char *k, const char *v)
 	if (!strcmp(k, "tz")) { opt.tz = n; tz_given = 1; }	/* minutes: before time zones */
 	else if (!strcmp(k, "timezone")) str_copy(opt.tzname, v, sizeof(opt.tzname));
 	else if (!strcmp(k, "check")) opt.check = n;
+	else if (!strcmp(k, "signature")) unescape(opt.signature, v, sizeof(opt.signature));
 	else if (!strcmp(k, "page")) opt.page = n < 20 ? 20 : n > 1000 ? 1000 : n;
 	else if (!strcmp(k, "keepcache")) opt.keepcache = n;
 	else if (!strcmp(k, "log")) opt.log = n;
@@ -559,6 +559,8 @@ int store_save_settings(void)
 	put_fmt(&b, "1 = work offline: don't connect, keep new messages in the Outbox",
 		"OFFLINE", "%d", opt.offline);
 	put_fmt(&b, "the editor wraps lines at this column (40-78)", "WRAP", "%d", opt.wrap);
+	put_str(&b, "added below new messages from every account; \\n starts a new line (up to 4)",
+		"SIGNATURE", opt.signature);
 	put_fmt(&b, "main window x,y,width,height in pixels; 0,0,0,0 = let EMail place it",
 		"MAIN", "%d,%d,%d,%d", opt.main_x, opt.main_y, opt.main_w, opt.main_h);
 	put_fmt(&b, "dividers: folder pane width, message list height, in pixels",
@@ -610,8 +612,6 @@ int store_save_settings(void)
 		put_secret(&b, "Falcon mode: its password, encrypted (iCloud, Gmail: an app password)", "DPASS", a->dpass);
 		put_str(&b, "Falcon mode: SMTP login; empty = same as incoming, - = none", "DSMTPUSER", a->dsmtpuser);
 		put_secret(&b, "Falcon mode: SMTP password, if the SMTP login differs (encrypted)", "DSMTPPASS", a->dsmtppass);
-		put_str(&b, "added below new messages; \\n starts a new line (two lines in the account dialog)",
-			"SIGNATURE", a->signature);
 	}
 	r = pf_save(inf_path, b.s, b.len);
 	sb_free(&b);

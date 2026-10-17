@@ -208,14 +208,14 @@ static void t_compose(void)
 	free(raw);
 	free(smtp);
 
-	strcpy(a.signature, "Yaary\nSent from my Falcon");
+	strcpy(opt.signature, "Yaary\nSent from my Falcon");
 	raw = compose_new(&a, "dana@example.com");
 	CHECK(!strcmp(raw, "To: dana@example.com\nCc: \nSubject: \n\n\n\n-- \nYaary\nSent from my Falcon"),
 	      "new message with signature [%s]", raw);
 	free(raw);
 
 	/* mailto: links, as EContact sends them with VA_START */
-	a.signature[0] = 0;
+	opt.signature[0] = 0;
 	raw = compose_mailto(&a, "Maya Carter <maya@pixelpress.example>");
 	CHECK(!strcmp(raw, "To: Maya Carter <maya@pixelpress.example>\nCc: \nSubject: \n\n"),
 	      "mailto: a name and address [%s]", raw);
@@ -231,7 +231,7 @@ static void t_compose(void)
 	raw = compose_mailto(&a, "");
 	CHECK(!strcmp(raw, "To: \nCc: \nSubject: \n\n"), "mailto: nothing [%s]", raw);
 	free(raw);
-	strcpy(a.signature, "Yaary");
+	strcpy(opt.signature, "Yaary");
 	raw = compose_mailto(&a, "q@r.example?body=Hi");
 	CHECK(!strcmp(raw, "To: q@r.example\nCc: \nSubject: \n\nHi\n\n-- \nYaary"), "mailto: body, then the signature [%s]", raw);
 	free(raw);
@@ -305,7 +305,7 @@ static void t_zone(void)
 }
 
 /* EMAIL.INF: names in capitals, a note, the setting and an empty line;
-   read back the same, a password with " ;" and a two-line signature too */
+   read back the same, a password with " ;" and the two-line signature too */
 static void t_inf(void)
 {
 	char dir[64], path[100], *inf, *p;
@@ -316,8 +316,8 @@ static void t_inf(void)
 	mkdir(dir, 0755);
 	snprintf(path, sizeof(path), "%s/EMAIL.INF", dir);
 	{
-		static const char old[] = "[options]\r\ntz=180\r\n[account]\r\nname=Home\r\nemail=a@me.com\r\n"
-			"user=a\r\npass=x ;y\r\nsignature=Dana\\nTel Aviv\r\n";
+		static const char old[] = "[options]\r\ntz=180\r\nsignature=Dana\\nTel Aviv\r\n[account]\r\nname=Home\r\n"
+			"email=a@me.com\r\nuser=a\r\npass=x ;y\r\n";
 		pf_save(path, old, (long)strlen(old));
 	}
 	unsetenv("TZ");			/* no machine zone: the old minutes decide */
@@ -330,7 +330,8 @@ static void t_inf(void)
 	CHECK(inf && strstr(inf, "; your time zone") && strstr(inf, "\r\nTIMEZONE=") && !strstr(inf, "\r\nTZ="),
 	      "note, TIMEZONE=, empty line");
 	CHECK(inf && strstr(inf, "\r\nPASS={E}") && !strstr(inf, "x ;y"), "PASS written encrypted");
-	CHECK(inf && strstr(inf, "\r\nSIGNATURE=Dana\\nTel Aviv\r\n"), "SIGNATURE written");
+	CHECK(inf && strstr(inf, "\r\nSIGNATURE=Dana\\nTel Aviv\r\n") &&
+	      strstr(inf, "\r\nSIGNATURE=") < strstr(inf, "\r\n[ACCOUNT]\r\n"), "SIGNATURE written, in [OPTIONS]");
 	/* every setting line: a note above, an empty line below */
 	for (p = inf; p && (p = strstr(p, "\r\n")); p += 2) {
 		const char *l = p + 2;
@@ -342,7 +343,7 @@ static void t_inf(void)
 	forget_accounts();		/* store_init adds to what is loaded */
 	store_init(dir);
 	a = accts[0];
-	CHECK(!strcmp(a->pass, "x ;y") && !strcmp(a->signature, "Dana\nTel Aviv") && zone_offset_now() == 180,
+	CHECK(!strcmp(a->pass, "x ;y") && !strcmp(opt.signature, "Dana\nTel Aviv") && zone_offset_now() == 180,
 	      "read back from the new EMAIL.INF");
 	CHECK(!store_lost_passwords, "EMAIL.KEY opens them");
 	/* another key: the password is gone, and EMail says so */

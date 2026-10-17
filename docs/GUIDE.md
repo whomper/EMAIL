@@ -66,7 +66,6 @@ Options > Accounts > New, or the dialog EMail shows at first start:
 | POP3: leave mail on the server | keep a copy on the server after downloading    |
 | Outgoing       | the Pi's IP and 587 through the gateway; leave User empty to use the incoming login, or type `-` for a server that needs none |
 | Passwords      | shown as `*`; click the eye beside the field to see what you typed |
-| Signature      | two lines, added below new messages (a `|` in line 2 starts a third) |
 
 EMail holds up to eight accounts. Edit or delete one with Options >
 Accounts > Edit. Passwords are kept in `EMAIL.INF` encrypted with a random
@@ -108,7 +107,7 @@ and forth without typing them again: the gateway's (used when Falcon mode
 is off) and the provider's own (used when it is on). Options > Accounts >
 Edit shows the set of the mode you are in, and changing a password in one
 mode leaves the other alone. The first time, Falcon mode's login starts as
-a copy of the gateway's. Your name, address and signature are shared. When you switch
+a copy of the gateway's. Your name and address are shared. When you switch
 it on, EMail fills them in for Gmail, iCloud, Yahoo, GMX, web.de, AOL,
 Fastmail and Zoho from the e-mail address, and names any account whose
 servers you still have to type in. The usual ports:
@@ -445,6 +444,10 @@ IST-2IDT), MiNT's /etc/timezone, or the minutes an older EMAIL.INF kept;
 otherwise UTC. It is kept as TIMEZONE= in EMAIL.INF. Also automatic checking every N
 minutes, how many messages to load at a time, whether read messages stay on disk
 after quitting, the protocol log, and the keyboard EMail starts with.
+
+**Settings > Signature**: up to four lines, added below every new
+message, reply and forward after a "-- " line. There is one signature
+for all your accounts.
 
 ## Folders
 

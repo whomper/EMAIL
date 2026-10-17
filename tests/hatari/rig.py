@@ -31,6 +31,16 @@ def fakesting(auto):
     shutil.copy(os.path.join(FAKESTING, "FAKESTNG.PRG"), auto)
 
 
+def release(app, d, *files):
+    """Another AERA program's files from its release (guidelines 1.2), as
+    Erez has them: APP for the latest, APP@vX.Y for that one. Returns the
+    release's tag (also in d/APP.VERSION) for the report."""
+    getrelease = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "common", "tools",
+                              "getrelease.py")
+    subprocess.run([sys.executable, getrelease, app, d] + list(files), check=True)
+    return open(os.path.join(d, app.split("@")[0].upper() + ".VERSION")).read().strip()
+
+
 def bridge(work, fifo_out, fifo_in):
     """Start FAKESTNG's other end on Hatari's serial FIFOs, logging to work/bridge.log."""
     return subprocess.Popen([sys.executable, os.path.join(FAKESTING, "serial_bridge.py"), fifo_out, fifo_in],

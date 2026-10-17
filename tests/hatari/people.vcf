@@ -1,0 +1,18 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Dana Cohen
+N:Cohen;Dana;;;
+EMAIL;TYPE=INTERNET;TYPE=HOME:dana@example.com
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Avi Levi
+N:Levi;Avi;;;
+EMAIL;TYPE=INTERNET;TYPE=WORK:avi@example.org
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Grace Baker
+N:Baker;Grace;;;
+EMAIL;TYPE=INTERNET;TYPE=HOME:grace@example.net
+END:VCARD

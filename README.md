@@ -209,11 +209,16 @@ tests/hatari/stop_test.py /tmp/mail-stop etos512us.img # Esc stops a server that
 tests/hatari/ui_tour.py WORKDIR etos512us.img          # screenshots of the interface
 tests/hatari/screenshots.py WORKDIR etos512us.img      # the pictures in docs/, English sample mail
 tests/hatari/falcon_test.py /tmp/mail-tls etos512us.img --dsp emu   # Falcon mode, TLS + DSP
+tests/hatari/econtact_test.py /tmp/mail-ec etos512us.img   # names and ^B with EContact's latest release
+tests/hatari/help_test.py /tmp/mail-help etos512us.img     # EMAIL.HYP in EHypView's latest release
 ```
 
 `net_test.py` boots an emulated Falcon, where EMail logs in to Dovecot, mirrors the inbox, opens a
 Hebrew message and sends a Hebrew reply; the test checks the reply and its copy in Sent on the server.
-`select_test.py`, `rename_test.py` and `colour_tour.py` run the same way. Hatari has no network card,
+`select_test.py`, `rename_test.py` and `colour_tour.py` run the same way. The tests that need another
+AERA program take its latest release, as you would have it (`common/tools/getrelease.py`; add `vX.Y`
+for another one): `econtact_test.py` with EContact, `help_test.py` with EHypView. `people_test.py`
+checks the same conversation with a stand-in for EContact (`build/fakecontact.acc`). Hatari has no network card,
 so `FAKESTNG.PRG` (the AERA apps' shared one, in `common/tools/fakesting`) stands in for STinG and
 carries EMail's connections over the emulated serial port to `serial_bridge.py` next to it. It's for
 the emulator only; never install it on a real Atari.

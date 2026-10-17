@@ -10,7 +10,7 @@ meanwhile (^N, a new message) is not lost.
 Hatari has no network card: FAKESTNG.PRG carries EMail's TCP connections
 over the emulated serial port to serial_bridge.py, as in net_test.py.
 
-    stop_test.py WORKDIR EMUTOS.IMG     (needs Xvfb, xdotool)
+    stop_test.py WORKDIR [MACHINE]     (needs Xvfb, xdotool)
 """
 import os
 import shutil
@@ -48,7 +48,7 @@ def silent_server(stop):
 
 
 def main():
-    work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+    work, machine, more = rig.cli("ST")
     shutil.rmtree(work, ignore_errors=True)
     hd = os.path.join(work, "hd")
     os.makedirs(os.path.join(hd, "AUTO"))
@@ -71,7 +71,7 @@ def main():
     for p in (fifo_out, fifo_in):
         os.mkfifo(p)
     bridge = rig.bridge(work, fifo_out, fifo_in)
-    r = rig.Rig(work, tos, machine="st", serial=(fifo_out, fifo_in), extra=("--memsize", "4", "--monitor", "mono"))
+    r = rig.Rig(work, machine, serial=(fifo_out, fifo_in))
     log = os.path.join(hd, "EMAIL.LOG")
     try:
         time.sleep(30)                  # boot; connected, waiting for the greeting

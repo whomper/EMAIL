@@ -10,11 +10,11 @@ connections over the emulated serial port to serial_bridge.py. EMail
 reads the inbox, opens a Hebrew message, and sends a Hebrew reply; the
 test then checks on the server that the reply arrived.
 
-    falcon_test.py WORKDIR EMUTOS.IMG     (needs Xvfb, xdotool, dovecot, openssl)
+    falcon_test.py WORKDIR [MACHINE]     (needs Xvfb, xdotool, dovecot, openssl)
 
 Like net_test.py, but the servers only speak TLS (IMAPS, SMTP on 465
-style) and EMAIL.INF has falcon=1. Extra Hatari options can follow, e.g.
---dsp emu to check signatures on the DSP.
+style) and EMAIL.INF has falcon=1. The Falcon checks the signatures on
+its DSP; the TT (no DSP) on the 68030. Extra Hatari options can follow.
 """
 import email
 import email.header
@@ -33,8 +33,8 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 IMAP, SMTP = 10143, 10025
 IMAPS, SMTPS = 10993, 10465
 
-work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
-extra = tuple(sys.argv[3:])
+work, machine, more = rig.cli("Falcon")
+extra = tuple(more)
 os.makedirs(work, exist_ok=True)
 srv = os.path.join(work, "srv")
 hd = os.path.join(work, "hd")
@@ -108,7 +108,7 @@ bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
 # 4 MB: Falcon mode needs room for TLS (Falcons came with 1, 4 or 14 MB)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in), extra=("--memsize", "4") + extra)
+r = rig.Rig(work, machine, serial=(fifo_out, fifo_in), extra=extra)
 
 
 def wait_log(pattern, timeout):

@@ -11,7 +11,7 @@ sends. The test checks what EMail asked (C:\\PEOPLE.LOG), what reached the
 server, and leaves screenshots of the names in the list, the reader and
 the To: line.
 
-    people_test.py WORKDIR EMUTOS.IMG  (make build/fakecontact.acc first)
+    people_test.py WORKDIR [MACHINE]  (make build/fakecontact.acc first)
 """
 import email
 import email.header
@@ -29,7 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 IMAP, SMTP = 10143, 10025
 
-work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+work, machine, more = rig.cli("Falcon")
 os.makedirs(work, exist_ok=True)
 srv = os.path.join(work, "srv")
 hd = os.path.join(work, "hd")
@@ -74,7 +74,7 @@ for p in (fifo_out, fifo_in):
 bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in), extra=("--memsize", "4"))
+r = rig.Rig(work, machine, serial=(fifo_out, fifo_in))
 checks = []
 
 

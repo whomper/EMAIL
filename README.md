@@ -198,22 +198,23 @@ FALCON=1 make itest # Falcon mode: EMail's own TLS, implicit TLS and STARTTLS
 `make test` also runs the gateway's own tests, and the fuzz targets' inputs again (`tests/fuzz`;
 `make fuzz` with clang fuzzes the IMAP, POP3, SMTP and MIME readers).
 
-`tests/hatari/` runs `EMAIL.PRG` itself on an emulated Falcon in the
-[Hatari](https://hatari.tuxfamily.org/) emulator with [EmuTOS](https://emutos.sourceforge.io/), with
-Xvfb and xdotool:
+`tests/hatari/` runs `EMAIL.PRG` itself in the [Hatari](https://hatari.tuxfamily.org/) emulator, with
+Xvfb and xdotool, on the AERA family's test machines (`common/tools/machines.py list`: `ST`, `ST-1`,
+`TT`, `Falcon`, each with its screens, as in `ST:low` or `Falcon:256`). Each test takes the machine
+after its work folder, or runs on its usual one; the TOS is EmuTOS 1.4, fetched once:
 
 ```sh
 make -C common/tools/fakesting
-tests/hatari/net_test.py /tmp/mail-net etos512us.img   # Falcon, real servers
-tests/hatari/stop_test.py /tmp/mail-stop etos512us.img # Esc stops a server that never answers
-tests/hatari/ui_tour.py WORKDIR etos512us.img          # screenshots of the interface
-tests/hatari/screenshots.py WORKDIR etos512us.img      # the pictures in docs/, English sample mail
-tests/hatari/falcon_test.py /tmp/mail-tls etos512us.img --dsp emu   # Falcon mode, TLS + DSP
-tests/hatari/econtact_test.py /tmp/mail-ec etos512us.img   # names and ^B with EContact's latest release
-tests/hatari/help_test.py /tmp/mail-help etos512us.img     # EMAIL.HYP in EHypView's latest release
+tests/hatari/net_test.py /tmp/mail-net             # Falcon, real servers (or: ... /tmp/mail-net ST)
+tests/hatari/stop_test.py /tmp/mail-stop           # ST: Esc stops a server that never answers
+tests/hatari/ui_tour.py WORKDIR                    # screenshots of the interface
+tests/hatari/screenshots.py WORKDIR                # the pictures in docs/, English sample mail
+tests/hatari/falcon_test.py /tmp/mail-tls          # Falcon mode, TLS and the DSP (or: ... TT)
+tests/hatari/econtact_test.py /tmp/mail-ec         # names and ^B with EContact's latest release
+tests/hatari/help_test.py /tmp/mail-help           # EMAIL.HYP in EHypView's latest release
 ```
 
-`net_test.py` boots an emulated Falcon, where EMail logs in to Dovecot, mirrors the inbox, opens a
+In `net_test.py` EMail logs in to Dovecot, mirrors the inbox, opens a
 Hebrew message and sends a Hebrew reply; the test checks the reply and its copy in Sent on the server.
 `select_test.py`, `rename_test.py` and `colour_tour.py` run the same way. The tests that need another
 AERA program take its latest release, as you would have it (`common/tools/getrelease.py`; add `vX.Y`

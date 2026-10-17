@@ -9,7 +9,7 @@ name typed) makes none, Settings and Accounts leave EMAIL.INF as it was,
 Move to moves nothing, and Quit and closing a message being written keep
 EMail and the message. Screenshots of each dialog and alert.
 
-    esc_test.py WORKDIR EMUTOS.IMG
+    esc_test.py WORKDIR [MACHINE]
 """
 import email
 import email.header
@@ -27,7 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 IMAP, SMTP = 10143, 10025
 
-work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+work, machine, more = rig.cli("Falcon")
 os.makedirs(work, exist_ok=True)
 srv = os.path.join(work, "srv")
 hd = os.path.join(work, "hd")
@@ -71,7 +71,7 @@ for p in (fifo_out, fifo_in):
 bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in), extra=("--memsize", "4"))
+r = rig.Rig(work, machine, serial=(fifo_out, fifo_in))
 UNDO = 0x61
 checks = []
 

@@ -11,7 +11,7 @@ card-cli from the same release's source. EMail replies to Dana, types
 "Grace" on the To: line and presses ^B: EContact's window opens searching
 for her, Return chooses her, and the reply goes to Dana and Grace Baker.
 
-    econtact_test.py WORKDIR EMUTOS.IMG [vX.Y]   (EContact's latest release, or that one)
+    econtact_test.py WORKDIR [MACHINE] [vX.Y]   (EContact's latest release, or that one)
 """
 import email
 import email.header
@@ -30,7 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 IMAP, SMTP = 10143, 10025
 
-work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+work, machine, more = rig.cli("Falcon")
 os.makedirs(work, exist_ok=True)
 srv = os.path.join(work, "srv")
 hd = os.path.join(work, "hd")
@@ -58,7 +58,7 @@ smtp = subprocess.Popen([sys.executable, os.path.join(ROOT, "tests", "smtp_serve
 
 # EContact: its release, and its address book made by its own card-cli
 # from the same release's source
-ec_spec = "EContact@" + sys.argv[3] if len(sys.argv) > 3 else "EContact"
+ec_spec = "EContact@" + more[0] if more else "EContact"
 ec_dir = os.path.join(work, "econtact")
 shutil.rmtree(ec_dir, ignore_errors=True)
 tag = rig.release(ec_spec, ec_dir, "ECONTACT.ACC")
@@ -99,7 +99,7 @@ for p in (fifo_out, fifo_in):
 bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in), extra=("--memsize", "8"))
+r = rig.Rig(work, machine, serial=(fifo_out, fifo_in))
 checks = []
 
 

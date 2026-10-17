@@ -3,7 +3,7 @@
 # Copyright (C) 2026 AERA | Erez Yaary
 """A tour of EMAIL.PRG in Hatari, saving a screenshot after each step.
 
-    ui_tour.py WORKDIR EMUTOS.IMG
+    ui_tour.py WORKDIR [MACHINE]
 
 WORKDIR/hd is the emulated drive C: with EMAIL.PRG, EMAIL.INF and EMAIL\\
 (for instance the mail folder left by `KEEP=1 make itest`, with
@@ -15,8 +15,8 @@ import time
 import rig
 from rig import K, SCAN
 
-work, tos = sys.argv[1], sys.argv[2]
-r = rig.Rig(work, tos)
+work, machine, more = rig.cli("Falcon")
+r = rig.Rig(work, machine)
 cw, ch = 8, 16
 
 def menu(title_x, item):

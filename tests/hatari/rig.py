@@ -22,8 +22,25 @@ SHIFTED = {"!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7",
            "(": "9", ")": "0", "_": "-", "+": "=", ":": ";", '"': "'", "<": ",", ">": ".",
            "?": "/", "{": "[", "}": "]", "|": "\\", "~": "`"}
 
+COMMON_TOOLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "common", "tools")
+sys.path.insert(0, COMMON_TOOLS)
+import machines  # noqa: E402  the family's test machines (guidelines, The machines)
+
 # FAKESTNG.PRG and its bridge are common's: make -C common/tools/fakesting
-FAKESTING = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "common", "tools", "fakesting")
+FAKESTING = os.path.join(COMMON_TOOLS, "fakesting")
+
+
+def cli(default, usage=None):
+    """A rig's arguments, WORKDIR [MACHINE] [MORE...]: the work folder, the
+    machine (one of machines.py's, NAME or NAME:SCREEN; default if left out)
+    and what follows."""
+    a = sys.argv[1:]
+    if not a:
+        sys.exit(usage or "usage: %s WORKDIR [MACHINE]  (machines: %s)"
+                 % (os.path.basename(sys.argv[0]), ", ".join(machines.MACHINES)))
+    rest = a[1:]
+    machine = rest.pop(0) if rest and rest[0].partition(":")[0] in machines.MACHINES else default
+    return os.path.abspath(a[0]), machine, rest
 
 
 def fakesting(auto):
@@ -35,8 +52,7 @@ def release(app, d, *files):
     """Another AERA program's files from its release (guidelines 1.2), as
     Erez has them: APP for the latest, APP@vX.Y for that one. Returns the
     release's tag (also in d/APP.VERSION) for the report."""
-    getrelease = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "common", "tools",
-                              "getrelease.py")
+    getrelease = os.path.join(COMMON_TOOLS, "getrelease.py")
     subprocess.run([sys.executable, getrelease, app, d] + list(files), check=True)
     return open(os.path.join(d, app.split("@")[0].upper() + ".VERSION")).read().strip()
 
@@ -52,10 +68,14 @@ K = dict(RETURN=0x1c, ESC=0x01, TAB=0x0f, BACKSPACE=0x0e, DELETE=0x53, UP=0x48, 
 
 
 class Rig:
-    def __init__(self, work, tos, machine="falcon", display=":99", serial=None, extra=(),
+    def __init__(self, work, machine="Falcon", display=":99", serial=None, extra=(),
                  auto="C:\\EMAIL.PRG"):
-        self.work, self.tos, self.display = work, tos, display
-        self.env = dict(os.environ, DISPLAY=display, SDL_AUDIODRIVER="dummy")
+        """machine: one of machines.py's (Falcon, ST:mono...), drive C: is work/hd"""
+        self.work, self.display = work, display
+        self.machine = machines.Machine(machine, os.path.join(work, "hd"))
+        print("machine:", self.machine.describe(), flush=True)
+        self.env = self.machine.env(dict(os.environ, DISPLAY=display, SDL_VIDEODRIVER="x11",
+                                         SDL_AUDIODRIVER="dummy"))
         self.fifo = os.path.join(work, "cmd.fifo")
         self.shots = os.path.join(work, "shots")
         os.makedirs(self.shots, exist_ok=True)
@@ -65,15 +85,11 @@ class Rig:
             self.xvfb = subprocess.Popen(["Xvfb", display, "-screen", "0", "1024x768x24"],
                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(1)
-        args = ["hatari", "-w", "--statusbar", "no", "--borders", "no", "--zoom", "1",
-                "--confirm-quit", "no", "--tos", tos, "--machine", machine,
-                "--harddrive", os.path.join(work, "hd"), "--fast-boot", "yes", "--sound", "off",
-                "--natfeats", "yes", "--cmd-fifo", self.fifo, "--screenshot-dir", self.shots,
-                "--log-level", "warn"]
+        args = (["hatari", "-w", "--statusbar", "no", "--borders", "no", "--zoom", "1"] + self.machine.args() +
+                ["--fast-boot", "yes", "--natfeats", "yes", "--cmd-fifo", self.fifo,
+                 "--screenshot-dir", self.shots, "--log-level", "warn"])
         if auto:
             args += ["--auto", auto]
-        if machine == "falcon":
-            args += ["--monitor", "vga", "--dsp", "none"]
         if serial:
             args += ["--rs232-out", serial[0], "--rs232-in", serial[1]]
         args += list(extra)

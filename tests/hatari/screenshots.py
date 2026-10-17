@@ -8,7 +8,7 @@ tests), the time zone Europe/London, a few folders. Saves the main window
 with a message open and Settings > Connection to
 WORKDIR/shots; copy the ones that look right into docs/.
 
-    screenshots.py WORKDIR EMUTOS.IMG     (needs Xvfb, xdotool, dovecot)
+    screenshots.py WORKDIR [MACHINE]     (needs Xvfb, xdotool, dovecot)
 """
 import imaplib
 import os
@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 IMAP, SMTP = 10143, 10025
 
-work, tos = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+work, machine, more = rig.cli("Falcon")
 os.makedirs(work, exist_ok=True)
 srv = os.path.join(work, "srv")
 hd = os.path.join(work, "hd")
@@ -112,7 +112,7 @@ for p in (fifo_out, fifo_in):
 bridge = rig.bridge(work, fifo_out, fifo_in)
 shots = os.path.join(work, "shots")
 shutil.rmtree(shots, ignore_errors=True)
-r = rig.Rig(work, tos, serial=(fifo_out, fifo_in))
+r = rig.Rig(work, machine, serial=(fifo_out, fifo_in))
 ok = False
 try:
     time.sleep(45)                       # boot, log in, mirror the inbox

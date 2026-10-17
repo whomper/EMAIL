@@ -331,14 +331,19 @@ int people_answer(short to, const char *kind, const char *addr, const char *name
 {
 	char line[PEOPLE_ADDR + PEOPLE_NAME + 4];
 	int l;
-	if (kind) {			/* start */
+	if (kind) {			/* start: "names:" and a line break */
 		cur_to = to;
 		cur_kind = kind;
 		copy(cur, kind, sizeof(cur));
+		strcat(cur, "\n");
 		return 1;
 	}
-	if (!addr) {			/* end */
-		int ok = push();
+	if (!addr) {			/* end; with no lines, the bare kind ("pick:") */
+		int ok;
+		long k = (long)strlen(cur_kind);
+		if ((long)strlen(cur) == k + 1 && cur[k] == '\n')
+			cur[k] = 0;
+		ok = push();
 		cur[0] = 0;
 		people_poll();
 		return ok;
@@ -350,6 +355,7 @@ int people_answer(short to, const char *kind, const char *addr, const char *name
 		if (!push())
 			return 0;
 		copy(cur, cur_kind, sizeof(cur));
+		strcat(cur, "\n");
 	}
 	strcat(cur, line);
 	return 1;

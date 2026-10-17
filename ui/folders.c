@@ -120,6 +120,33 @@ static void draw(WIN *w, GRECT *clip)
 	}
 }
 
+/* a folder the open folder's messages can move to (as Move to offers
+   them): the same account and kind, not the Outbox, not itself */
+int folder_takes(ACCOUNT *a, FINFO *f)
+{
+	return f && a == cur_acct && cur_finfo && f != cur_finfo && !f->noselect &&
+	       f->role != FR_OUTBOX && f->local == cur_finfo->local;
+}
+
+/* the folder of the folder pane at a point, for a drop: 0 if there is
+   none there that takes the messages, else it and its row on the screen */
+FINFO *folders_drop_target(short mx, short my, GRECT *row)
+{
+	WIN *w = &w_folders;
+	long i;
+	if (main_h <= 0 || main_iconified || mx < w->work.x || mx >= w->work.x + w->work.w ||
+	    my < w->work.y || my >= w->work.y + w->work.h)
+		return 0;
+	i = w->top + (my - w->work.y) / ch;
+	if (i < 0 || i >= nent || !folder_takes(ent[i].a, ent[i].fi))
+		return 0;
+	row->x = w->work.x;
+	row->y = w->work.y + (short)((i - w->top) * ch);
+	row->w = w->work.w;
+	row->h = ch;
+	return ent[i].fi;
+}
+
 void folders_select(ACCOUNT *a, FINFO *fi)
 {
 	long newmsgs, i;

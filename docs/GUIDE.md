@@ -369,6 +369,13 @@ doing while the busy bee shows: "Opening the message...", "Moving 3 of
 parent ("Archive / 2023"); the arrows page through a long list, a click
 picks a folder and OK (or a double click) moves the messages there.
 
+**Drag a message onto a folder** in the folder pane to move it there; a
+message that is part of a selection takes the whole selection with it.
+An outline follows the pointer and the folder it is over is lit when the
+messages can go there (a folder of the same account, not the one they
+are in, not the Outbox). Let go anywhere else and nothing happens; Esc,
+Undo or the right button stops the drag.
+
 ## How your mail is kept
 
 **IMAP** accounts are mirrored: EMail keeps the headers of the newest

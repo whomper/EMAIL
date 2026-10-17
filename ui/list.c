@@ -454,10 +454,139 @@ void list_select_all(void)
 	menu_update();
 }
 
+/* ---------------- dragging messages onto a folder ----------------
+ * A press on a message that moves before the button comes up drags it,
+ * or the whole selection when it is part of one, to a folder of the
+ * folder pane: an outline follows the mouse, the folder under it that can
+ * take them is lit, and letting go there moves them as Move to does. Esc,
+ * Undo or the right button stops the drag; let go anywhere else and
+ * nothing happens. */
+static void xor_rect(GRECT *r, int filled)
+{
+	short p[10];
+	p[0] = p[6] = p[8] = r->x;
+	p[1] = p[3] = p[9] = r->y;
+	p[2] = p[4] = r->x + r->w - 1;
+	p[5] = p[7] = r->y + r->h - 1;
+	graf_mouse(M_OFF, 0);
+	if (filled) {
+		short q[4];
+		q[0] = r->x;
+		q[1] = r->y;
+		q[2] = r->x + r->w - 1;
+		q[3] = r->y + r->h - 1;
+		vr_recfl(vdi_h, q);
+	} else {
+		v_pline(vdi_h, 5, p);
+	}
+	graf_mouse(M_ON, 0);
+}
+
+/* the outline: one row's, two stacked for several messages */
+static void xor_drag(GRECT *b, int several)
+{
+	xor_rect(b, 0);
+	if (several) {
+		GRECT c = *b;
+		c.x += 3;
+		c.y += 3;
+		xor_rect(&c, 0);
+	}
+}
+
+/* 1 when the press on row i became a drag (done, or stopped) */
+static int drag_messages(long i, short mx, short my)
+{
+	short x = mx, y = my, b, k, held, stop = 0, offx, offy;
+	int several = nmarks > 1 && marked(i);
+	GRECT box, scr, lit;
+	FINFO *target = 0;
+	unsigned long *u;
+	long n;
+	/* a click, unless the mouse moves with the button down */
+	for (;;) {
+		graf_mkstate(&x, &y, &b, &k);
+		if (!(b & 1))
+			return 0;
+		if (x - mx > 3 || mx - x > 3 || y - my > 3 || my - y > 3)
+			break;
+		evnt_timer_(10);
+	}
+	/* the outline rides below and right of the pointer, clear of the
+	   folder it points at */
+	box.w = 16 * cw;
+	box.h = ch;
+	offx = -12;
+	offy = -(ch * 3 / 4);
+	scr.x = scr.y = 0;
+	scr.w = scr_w;
+	scr.h = scr_h;
+	wind_update(BEG_UPDATE);
+	wind_update(3);			/* the mouse is ours */
+	graf_mouse(FLAT_HAND, 0);
+	clip_on(&scr);
+	vswr_mode(vdi_h, 3);		/* XOR */
+	vsl_color(vdi_h, 1);
+	vsf_interior(vdi_h, 1);
+	vsf_color(vdi_h, 1);
+	box.x = x - offx;
+	box.y = y - offy;
+	xor_drag(&box, several);
+	do {
+		AEVENT ev;
+		short msg[8];
+		GRECT row;
+		FINFO *t;
+		if (evnt_multi_(MU_KEYBD | MU_TIMER, 0, 0, 0, 10, msg, &ev) & MU_KEYBD) {
+			short sc = KEY_SCAN(ev.kreturn);
+			if (sc == 0x01 || sc == 0x61)
+				stop = 1;	/* Esc, Undo */
+		}
+		graf_mkstate(&x, &y, &b, &k);
+		held = b & 1;
+		if (b & 2)
+			stop = 1;		/* the right button */
+		t = stop ? 0 : folders_drop_target(x, y, &row);
+		if (x - offx != box.x || y - offy != box.y || t != target) {
+			xor_drag(&box, several);
+			if (target)
+				xor_rect(&lit, 1);
+			box.x = x - offx;
+			box.y = y - offy;
+			target = t;
+			lit = row;
+			if (target)
+				xor_rect(&lit, 1);
+			if (!stop)
+				xor_drag(&box, several);
+		}
+	} while (held && !stop);
+	if (!stop)
+		xor_drag(&box, several);
+	if (target)
+		xor_rect(&lit, 1);
+	vswr_mode(vdi_h, 1);
+	graf_mouse(ARROW, 0);
+	wind_update(2);
+	wind_update(END_UPDATE);
+	if (stop || !target)
+		return 1;
+	if (several) {
+		u = list_targets(&n);
+	} else {
+		u = malloc(sizeof(*u));
+		n = 1;
+		if (u)
+			u[0] = cur_folder->h[view[i]].uid;
+	}
+	if (u)
+		move_messages(u, n, target);
+	return 1;
+}
+
 static void click(WIN *w, short mx, short my, short clicks, short kstate)
 {
 	long i;
-	(void)mx;
 	if (my < w->work.y + w->head_h)
 		return;
 	i = w->top + (my - w->work.y - w->head_h) / ch;
@@ -469,6 +598,8 @@ static void click(WIN *w, short mx, short my, short clicks, short kstate)
 		mark_click(i, kstate);
 		return;
 	}
+	if (clicks < 2 && i >= 0 && i < nview && drag_messages(i, mx, my))
+		return;
 	select_row(i, clicks > 1);
 }
 

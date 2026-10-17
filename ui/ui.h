@@ -187,6 +187,9 @@ void cmd_new_folder(ACCOUNT *a);
 void cmd_rename_folder(ACCOUNT *a, FINFO *fi);
 void cmd_delete_folder(ACCOUNT *a, FINFO *fi);
 void cmd_download_all(ACCOUNT *a, FINFO *fi);
+void move_messages(unsigned long *u, long n, FINFO *dest);	/* frees u */
+int  folder_takes(ACCOUNT *a, FINFO *f);	/* the open folder's messages can go there */
+FINFO *folders_drop_target(short mx, short my, GRECT *row);
 void cmd_edit_account(ACCOUNT *a);
 void cmd_refresh_folders(ACCOUNT *a);
 int  falcon_mode_set(int on);		/* 1 if it is now as asked */

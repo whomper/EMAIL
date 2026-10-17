@@ -485,23 +485,12 @@ static void cmd_delete(void)
 	menu_update();
 }
 
-static void cmd_move(void)
+/* the messages u[0..n) of the open folder into dest (Move to, and a drop
+   on a folder); frees u */
+void move_messages(unsigned long *u, long n, FINFO *dest)
 {
-	unsigned long *u;
-	long n, k, done = 0;
-	FINFO *dest;
+	long k, done = 0;
 	char title[60];
-	if (!cur_folder || !(u = list_targets(&n)))
-		return;
-	if (n > 1)
-		snprintf(title, sizeof(title), "Move %s messages to", num(n));
-	else
-		str_copy(title, "Move the message to", sizeof(title));
-	dest = dlg_pick_folder(cur_acct, title);
-	if (!dest) {
-		free(u);
-		return;
-	}
 	busy(1);
 	mail_err[0] = 0;
 	snprintf(title, sizeof(title), " to %s", dest->disp);
@@ -523,7 +512,28 @@ static void cmd_move(void)
 	reader_clear();
 	if (done)
 		list_after_remove();
+	folders_build();
 	menu_update();
+}
+
+static void cmd_move(void)
+{
+	unsigned long *u;
+	long n;
+	FINFO *dest;
+	char title[60];
+	if (!cur_folder || !(u = list_targets(&n)))
+		return;
+	if (n > 1)
+		snprintf(title, sizeof(title), "Move %s messages to", num(n));
+	else
+		str_copy(title, "Move the message to", sizeof(title));
+	dest = dlg_pick_folder(cur_acct, title);
+	if (!dest) {
+		free(u);
+		return;
+	}
+	move_messages(u, n, dest);
 }
 
 /* read/unread, or the flag: for several messages the flag goes on all of

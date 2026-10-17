@@ -277,6 +277,10 @@ out=$(run move 1 INBOX "$U1" "$SERVER")
 expect "move to the Hebrew folder" "ok" "$out"
 out=$(run sync 1 "$SERVER")
 expect "message is in the Hebrew folder" "synced: 1 total" "$out"
+out=$(run list 1 "$SERVER")
+expect "moved with its flag (and read state)" "^[0-9]*	 !" "$out"
+out=$(run list 1 INBOX)
+if grep -q "^$U1	" <<<"$out"; then FAIL=$((FAIL+1)); echo "FAIL moved message still in the Inbox"; else PASS=$((PASS+1)); echo "ok   moved message gone from the Inbox"; fi
 U5=$(uid_of "$(run list 1 "$SERVER")" "שלום")
 run show 1 "$SERVER" "$U5" >/dev/null
 

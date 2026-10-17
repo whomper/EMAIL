@@ -357,8 +357,10 @@ static short form_loop(short start)
 			PWFIELD *p = pw_of(edit);
 			short scan = KEY_SCAN(e.kreturn);
 			short nav = scan == 0x1c || scan == 0x72 || scan == 0x0f || scan == 0x48 || scan == 0x50;
-			if (scan == 0x01 && esc_button()) {
-				next = esc_button();	/* as if it were clicked */
+			if ((scan == 0x01 || scan == 0x61) && esc_button()) {
+				/* Esc or Undo: Cancel, as if clicked, even in a text
+				   field (the AERA guidelines, 3.5) */
+				next = esc_button();
 				cont = 0;
 			} else if (edit && clip_key(e.kreturn)) {
 				if (!p)

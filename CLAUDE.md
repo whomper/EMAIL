@@ -48,6 +48,10 @@ These come from AERA-Atari's repo template and are the same in every app's CLAUD
 
 - **A release** carries `EMAIL.PRG`, `EMAIL.HYP` and `.REF` (hcp from `common/tools/build-hcp.sh`),
   `CACERT.PEM`, `ROOTS.DAT` and the icon. The icons are committed in `icons/` (`make icons`).
+- The help file's front page (guidelines 4.3) is `docs/front.json`, laid out by
+  `common/tools/helpfront.py`. Its window picture `docs/help/WINDOW.IMG` is committed: when
+  `docs/screenshot.png` changes, make it again with
+  `python3 common/tools/helpfront.py thumb docs/screenshot.png docs/help/WINDOW.IMG 0,0,600,336 118,122 448,90 560,264`.
 - Before pushing: `make test` (the core, the fuzz inputs again, the
   gateway), `make itest` (against Dovecot: dovecot-imapd, dovecot-pop3d;
   also `TLS=1` and `FALCON=1` when the connection code changes), and

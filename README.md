@@ -178,7 +178,7 @@ gateway/  the Raspberry Pi gateways (emailgate.py is EMail's) and aera-gateway, 
 tests/    unit, fuzz and integration tests, the Hatari rigs (tests/hatari)
 tools/    the icon generator, sync-common.sh, sync-gateway.sh, bump.py, the TLS measurements (tlsbench)
 icons/    the desktop icon (RSC and ICN files), from tools/icon
-docs/     the user guide (GUIDE.md, the source of EMAIL.HYP) and the pictures
+docs/     the user guide (GUIDE.md and front.json, its first page: the source of EMAIL.HYP) and the pictures
 binary/   what make builds for the Atari (not committed: the releases have it)
 ```
 

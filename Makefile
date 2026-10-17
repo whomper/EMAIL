@@ -209,8 +209,10 @@ itest: $(OBJDIR)/mail-cli
 HCP ?= hcp
 # (and EMAIL.REF, its page names for ST-Guide's reference list)
 help: binary/EMAIL.HYP
-binary/EMAIL.HYP: docs/GUIDE.md tools/mkhelp.py VERSION | $(OBJDIR) binary
+binary/EMAIL.HYP: docs/GUIDE.md tools/mkhelp.py VERSION docs/front.json docs/help/WINDOW.IMG \
+                  common/help/EMAIL.IMG common/tools/helpfront.py common/tools/gemimg.py | $(OBJDIR) binary
 	python3 tools/mkhelp.py docs/GUIDE.md VERSION $(OBJDIR)/EMAIL.STG
+	python3 common/tools/helpfront.py page docs/front.json $(OBJDIR)/EMAIL.STG $(OBJDIR)/EMAIL.STG
 	$(HCP) --references -o $@ $(OBJDIR)/EMAIL.STG >/dev/null
 
 # a release's files: each one in dist/, and all of them in

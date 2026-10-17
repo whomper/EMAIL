@@ -13,9 +13,11 @@
 #include "ui.h"
 #include "../src/mail.h"
 #include "../src/compose.h"
+#include "../src/mime.h"
 #include "bidi.h"
 #include "util.h"
 #include "clip.h"
+#include "av.h"
 
 typedef struct {
 	char *s;
@@ -34,6 +36,7 @@ static short dirty;
 static ACCOUNT *e_acct;
 static char *e_irt, *e_refs;
 static unsigned long e_reply_uid;
+static unsigned ed_count;		/* messages opened: a pick is for one */
 static FINFO *e_reply_fi;
 
 int editor_dirty(void)
@@ -174,6 +177,7 @@ void editor_open(ACCOUNT *a, char *text, const char *irt, const char *refs)
 	w_editor.top = 0;
 	w_editor.total = nl;
 	set_title();
+	ed_count++;			/* a pick for the last message isn't for this one */
 	win_open(&w_editor);
 	eb_layout(&w_editor);		/* the bar's height, before the rows are counted */
 	win_sliders(&w_editor);
@@ -201,12 +205,18 @@ static short visual_col(const char *s, short n, short col, short cols, short rig
 	return rtl ? (right ? xoff - 1 : -1) : m;
 }
 
+static short rcpt_cursor(long line, short cols);
+
 /* where the cursor sits on screen: column relative to the work area */
 static short cursor_col(long line, short col, short cols, short *hoff)
 {
 	ELINE *l = &ln[line];
 	long he = header_end();
-	short off = 0;
+	short off = 0, rc = line == cy && col == cx ? rcpt_cursor(line, cols) : -1;
+	if (rc >= 0) {
+		*hoff = 0;
+		return rc;
+	}
 	if (col > cols - 2)
 		off = col - cols + 2;
 	*hoff = off;
@@ -224,6 +234,187 @@ static short cursor_col(long line, short col, short cols, short *hoff)
 		}
 	}
 	return visual_col(l->s + off, l->n - off, col - off, cols, 1, 0);
+}
+
+/* ---------------- recipients ----------------
+ * To:, Cc: and Bcc: keep "Maya Carter <maya@x.example>, d@e" as typed or
+ * picked, and that is what is sent. On the screen each recipient but the
+ * one the cursor is in shows framed, by the name EContact has for it, else
+ * as its address; the address is its tooltip. */
+#define MAXRCPT 40
+typedef struct {
+	short rs, re;		/* its text in the line, without the spaces round it */
+	short ds, dn;		/* where it shows (columns from the value's start), how wide */
+	short chip;		/* shown framed, by name */
+	char addr[PEOPLE_ADDR];
+	char show[PEOPLE_NAME];
+} RCPT;
+
+static int addr_line(long line)
+{
+	long he = header_end();
+	ELINE *l = &ln[line];
+	if (line >= (he >= 0 ? he : nl))
+		return 0;
+	return !strncasecmp(l->s, "To:", 3) || !strncasecmp(l->s, "Cc:", 3) || !strncasecmp(l->s, "Bcc:", 4);
+}
+
+static short value_at(long line);
+
+/* the recipients of an address line and where each shows: how many; *dend
+   the width of all of it, from the value's start */
+static int rcpt_layout(long line, RCPT *r, int max, short *dend)
+{
+	ELINE *l = &ln[line];
+	short i = value_at(line), pe = i, pd = 0, k = 0;
+	while (k < max) {
+		short start = i, q = 0, ang = 0;
+		RCPT *t = &r[k];
+		char one[256];
+		while (i < l->n && (q || ang || l->s[i] != ',')) {
+			if (l->s[i] == '"')
+				q = !q;
+			else if (!q && l->s[i] == '<')
+				ang = 1;
+			else if (!q && l->s[i] == '>')
+				ang = 0;
+			i++;
+		}
+		t->rs = start;
+		while (t->rs < i && l->s[t->rs] == ' ')
+			t->rs++;
+		t->re = i;
+		while (t->re > t->rs && l->s[t->re - 1] == ' ')
+			t->re--;
+		t->addr[0] = t->show[0] = 0;
+		t->chip = 0;
+		if (t->re > t->rs) {
+			short n = t->re - t->rs < (short)sizeof(one) ? t->re - t->rs : (short)sizeof(one) - 1;
+			memcpy(one, l->s + t->rs, n);
+			one[n] = 0;
+			addr_split(one, 0, 0, t->addr, sizeof(t->addr));
+			/* framed unless the cursor is in it (or just after it) */
+			t->chip = strchr(t->addr, '@') && !(line == cy && cx > t->rs && cx <= t->re);
+			if (t->chip)
+				str_copy(t->show, person_shown(t->addr), sizeof(t->show));
+		}
+		t->ds = pd + (t->rs - pe);	/* what is between shows as it is */
+		t->dn = t->chip ? (short)strlen(t->show) : t->re - t->rs;
+		pd = t->ds + t->dn;
+		pe = t->re;
+		k++;
+		if (i >= l->n)
+			break;
+		i++;			/* the comma */
+	}
+	if (dend)
+		*dend = pd + (l->n - pe);
+	return k;
+}
+
+/* the column a recipient line shows the line's column c at (from the
+   value's start) */
+static short rcpt_col(RCPT *r, int n, short v, short c)
+{
+	short pe = v, pd = 0;
+	int k;
+	for (k = 0; k < n; k++) {
+		if (c < r[k].rs)
+			return pd + (c - pe);
+		if (c <= r[k].re)
+			return r[k].chip ? r[k].ds + (c == r[k].rs ? 0 : r[k].dn) : r[k].ds + (c - r[k].rs);
+		pd = r[k].ds + r[k].dn;
+		pe = r[k].re;
+	}
+	return pd + (c - pe);
+}
+
+/* and back: the line's column for a column on the screen; on a framed
+   recipient, its end (the cursor in it shows it as typed, to change it) */
+static short rcpt_raw(RCPT *r, int n, short v, short d, short len)
+{
+	short pe = v, pd = 0, c;
+	int k;
+	for (k = 0; k < n; k++) {
+		if (d < r[k].ds)
+			return pe + (d - pd);
+		if (d < r[k].ds + r[k].dn)
+			return r[k].chip ? r[k].re : r[k].rs + (d - r[k].ds);
+		pd = r[k].ds + r[k].dn;
+		pe = r[k].re;
+	}
+	c = pe + (d - pd);
+	return c > len ? len : c;
+}
+
+/* an address line drawn as recipients; 0 when the cursor would be off
+   the right edge that way (the line is then drawn as typed, scrolled) */
+static int draw_rcpts(long line, short x0, short y, short cols)
+{
+	ELINE *l = &ln[line];
+	RCPT r[MAXRCPT];
+	const char *colon = memchr(l->s, ':', l->n);
+	short lab, v, dend, room, x, pe, pd;
+	int n, k;
+	if (!colon)
+		return 0;
+	lab = (short)(colon - l->s + 1);
+	v = value_at(line);
+	n = rcpt_layout(line, r, MAXRCPT, &dend);
+	room = cols - lab - 1;
+	if (line == cy && rcpt_col(r, n, v, cx) > room - 2)
+		return 0;
+	text_at(x0, y, l->s, lab, cols, TX_BOLD);
+	x = x0 + (lab + 1) * cw;
+	pe = v;
+	pd = 0;
+	for (k = 0; k <= n; k++) {
+		/* what lies before the recipient (", "), then the recipient */
+		short gap = (k < n ? r[k].rs : l->n) - pe, left = room - pd;
+		if (gap > 0 && left > 0)
+			text_at(x + pd * cw, y, l->s + pe, gap, left, TX_LTR);
+		if (k == n)
+			break;
+		left = room - r[k].ds;
+		if (left > 0 && r[k].dn > 0) {
+			if (r[k].chip) {
+				GRECT f;
+				short w = r[k].dn < left ? r[k].dn : left;
+				text_at(x + r[k].ds * cw, y, r[k].show, r[k].dn, w, TX_LTR);
+				f.x = x + r[k].ds * cw - 2;
+				f.y = y;
+				f.w = w * cw + 4;
+				f.h = ch;
+				frame(&f, 1);
+			} else {
+				text_at(x + r[k].ds * cw, y, l->s + r[k].rs, r[k].dn, left, TX_LTR);
+			}
+		}
+		pd = r[k].ds + r[k].dn;
+		pe = r[k].re;
+	}
+	return 1;
+}
+
+/* where the cursor shows on an address line drawn as recipients, or -1 */
+static short rcpt_cursor(long line, short cols)
+{
+	ELINE *l = &ln[line];
+	RCPT r[MAXRCPT];
+	const char *colon = memchr(l->s, ':', l->n);
+	short lab, v, d;
+	int n;
+	if (!colon || !addr_line(line))
+		return -1;
+	lab = (short)(colon - l->s + 1);
+	v = value_at(line);
+	n = rcpt_layout(line, r, MAXRCPT, 0);
+	if (cx < v)
+		return cx;
+	d = rcpt_col(r, n, v, cx);
+	if (d > cols - lab - 1 - 2)
+		return -1;
+	return lab + 1 + d;
 }
 
 /* ---------------- the button bar ----------------
@@ -355,7 +546,34 @@ int editor_tip(short mx, short my, char *out, int size)
 			str_copy(out, eb_tip[i], size);
 			return 1;
 		}
+	/* a recipient shown by name: its address */
+	if (on_rect(&w_editor.work, mx, my) && my >= w_editor.work.y + w_editor.head_h) {
+		long line = w_editor.top + (my - w_editor.work.y - w_editor.head_h) / ch;
+		short cols = w_editor.work.w / cw - 1, col = (mx - w_editor.work.x - cw / 2) / cw;
+		if (line < nl && addr_line(line) && (line != cy || rcpt_cursor(line, cols) >= 0)) {
+			RCPT r[MAXRCPT];
+			const char *colon = memchr(ln[line].s, ':', ln[line].n);
+			short d = col - (colon ? (short)(colon - ln[line].s + 2) : 0);
+			int n = rcpt_layout(line, r, MAXRCPT, 0), k;
+			for (k = 0; k < n; k++)
+				if (r[k].chip && d >= r[k].ds && d < r[k].ds + r[k].dn &&
+				    strcmp(r[k].show, r[k].addr)) {
+					str_copy(out, r[k].addr, size);
+					return 1;
+				}
+		}
+	}
 	return 0;
+}
+
+/* EContact's names came, or changed: the address lines again */
+void editor_names_came(void)
+{
+	long he;
+	if (w_editor.h <= 0)
+		return;
+	he = header_end();
+	win_redraw_lines(&w_editor, 0, he >= 0 ? he : nl);
 }
 
 static void draw(WIN *w, GRECT *clip)
@@ -370,7 +588,9 @@ static void draw(WIN *w, GRECT *clip)
 		short y = w->work.y + w->head_h + (short)((i - w->top) * ch), hoff = 0;
 		if (i == cy && cx > cols - 2)
 			hoff = cx - cols + 2;
-		if (he < 0 || i < he) {
+		if ((he < 0 || i < he) && addr_line(i) && draw_rcpts(i, x0, y, cols)) {
+			/* drawn as recipients */
+		} else if (he < 0 || i < he) {
 			const char *colon = memchr(l->s, ':', l->n);
 			if (colon && !hoff) {
 				/* the value one column after "Label:", whatever its
@@ -809,33 +1029,157 @@ void editor_attach_file(const char *full)
 	changed(he, -1);
 }
 
-/* add an address book entry to the To: line (or the header line the
-   cursor is on, when that is Cc or Bcc) */
+/* the address line ^B adds to: the one the cursor is on (To, Cc, Bcc),
+   else To */
+static long pick_line(void)
+{
+	long i, he = header_end();
+	if (addr_line(cy))
+		return cy;
+	for (i = 0; i < (he >= 0 ? he : nl); i++)
+		if (!strncasecmp(ln[i].s, "To:", 3))
+			return i;
+	return 0;
+}
+
+/* a picked person as the line has them: "Maya Carter <maya@x>", the name
+   in quotes when it has a comma or the like in it */
+static void person_text(SBUF *b, const PERSON *p)
+{
+	if (!p->name[0]) {
+		sb_adds(b, p->addr);
+		return;
+	}
+	if (strpbrk(p->name, ",;:\"<>@()[]")) {
+		const char *c;
+		sb_addc(b, '"');
+		for (c = p->name; *c; c++) {
+			if (*c == '"' || *c == '\\')
+				sb_addc(b, '\\');
+			sb_addc(b, *c);
+		}
+		sb_addc(b, '"');
+	} else {
+		sb_adds(b, p->name);
+	}
+	sb_printf(b, " <%s>", p->addr);
+}
+
+/* where a pick puts its people: the line, and the text typed there that
+   asked for them (replaced by them), as it was when ^B was pressed */
+static long pk_line = -1;
+static short pk_from, pk_to;
+static unsigned pk_ed;			/* which message (ed_count) */
+
+/* add people to `line`, in place of [from, to), commas between, and the
+   cursor after them: ready for the next */
+static void add_people(long line, short from, short to, const char *text)
+{
+	ELINE *l = &ln[line];
+	SBUF b;
+	char prev, next;
+	long old;
+	while (from > 0 && l->s[from - 1] == ' ')
+		from--;
+	while (to < l->n && l->s[to] == ' ')
+		to++;
+	prev = from > 0 ? l->s[from - 1] : ':';
+	next = to < l->n ? l->s[to] : 0;
+	sb_init(&b);
+	sb_adds(&b, prev == ':' || prev == ',' ? " " : ", ");
+	sb_adds(&b, text);
+	if (next != ',')
+		sb_adds(&b, ", ");
+	if (!grow_line(l, (short)(l->n - (to - from) + b.len))) {
+		sb_free(&b);
+		return;
+	}
+	l = &ln[line];
+	memmove(l->s + from + b.len, l->s + to, l->n - to + 1);
+	memcpy(l->s + from, b.s, b.len);
+	l->n = (short)(l->n - (to - from) + b.len);
+	old = cy;
+	cy = line;
+	cx = (short)(from + b.len);
+	sb_free(&b);
+	if (old != line)
+		win_redraw_lines(&w_editor, old, 1);	/* the cursor left it */
+	changed(line, 1);
+	win_ensure_visible(&w_editor, cy);
+}
+
+/* ^B: people from EContact's window; without EContact, from the
+   addresses EMail remembers (ADDRESS.TXT). What was typed of a name goes
+   to EContact's search and is replaced by the people chosen. */
 void editor_insert_address(void)
 {
-	char *addr;
-	long line = 0, he;
+	char *addr, partial[100];
+	long line;
+	short from, to;
 	ELINE *l;
 	if (w_editor.h <= 0)
 		return;
+	line = pick_line();
+	l = &ln[line];
+	from = to = l->n;
+	partial[0] = 0;
+	if (line == cy) {
+		RCPT r[MAXRCPT];
+		int n = rcpt_layout(line, r, MAXRCPT, 0), k;
+		for (k = 0; k < n; k++)
+			if (cx > r[k].rs && cx <= r[k].re && !strchr(r[k].addr, '@')) {
+				short m = r[k].re - r[k].rs < (short)sizeof(partial) ? r[k].re - r[k].rs
+										 : (short)sizeof(partial) - 1;
+				memcpy(partial, l->s + r[k].rs, m);
+				partial[m] = 0;
+				from = r[k].rs;
+				to = r[k].re;
+			}
+	}
+	if (people_picking()) {
+		av_send("ECONTACT", "");	/* its window is open already: up with it */
+		return;
+	}
+	if (people_pick(partial)) {
+		pk_line = line;
+		pk_from = from;
+		pk_to = to;
+		pk_ed = ed_count;
+		status("Choose in EContact...");
+		return;
+	}
 	addr = dlg_pick_address();
 	if (!addr)
 		return;
-	he = header_end();
-	if (cy < (he >= 0 ? he : nl) && (!strncasecmp(ln[cy].s, "Cc:", 3) || !strncasecmp(ln[cy].s, "Bcc:", 4)))
-		line = cy;
-	l = &ln[line];
-	if (grow_line(l, l->n + (short)strlen(addr) + 3)) {
-		char *t = str_trim(l->s + (strchr(l->s, ':') ? strchr(l->s, ':') - l->s + 1 : 0));
-		if (*t)
-			strcat(l->s, ", ");
-		else if (l->n && l->s[l->n - 1] != ' ')
-			strcat(l->s, " ");
-		strcat(l->s, addr);
-		l->n = (short)strlen(l->s);
-	}
+	if (w_editor.h > 0 && line < nl)
+		add_people(line, from, to, addr);
 	free(addr);
-	changed(line, 1);
+}
+
+/* the people chosen in EContact (n = 0: none) */
+void editor_picked(const PERSON *list, int n)
+{
+	SBUF b;
+	int k;
+	status("");
+	if (w_editor.h <= 0 || pk_ed != ed_count || pk_line < 0 || pk_line >= nl || !addr_line(pk_line)) {
+		pk_line = -1;
+		return;
+	}
+	if (pk_to > ln[pk_line].n)
+		pk_from = pk_to = ln[pk_line].n;
+	sb_init(&b);
+	for (k = 0; k < n; k++) {
+		if (k)
+			sb_adds(&b, ", ");
+		person_text(&b, &list[k]);
+	}
+	sb_addc(&b, 0);
+	if (n)
+		add_people(pk_line, pk_from, pk_to, b.s);
+	sb_free(&b);
+	pk_line = -1;
+	win_top(&w_editor);
 }
 
 static void closed(WIN *w)
@@ -876,6 +1220,16 @@ static void click(WIN *w, short mx, short my, short clicks, short kstate)
 		line = nl - 1;
 	if (line < 0)
 		return;
+	if (addr_line(line) && (line != cy || rcpt_cursor(line, cols) >= 0)) {
+		/* drawn as recipients: a click on one is a click at its end,
+		   which shows it as typed */
+		RCPT r[MAXRCPT];
+		const char *colon = memchr(ln[line].s, ':', ln[line].n);
+		short lab = colon ? (short)(colon - ln[line].s + 1) : 0, v = value_at(line);
+		int n = rcpt_layout(line, r, MAXRCPT, 0);
+		move_to(line, col <= lab ? v : rcpt_raw(r, n, v, col - lab - 1, ln[line].n));
+		return;
+	}
 	if (line_rtl(ln[line].s, ln[line].n)) {
 		/* map the visual column back to a logical one */
 		char vis[BIDI_MAX];

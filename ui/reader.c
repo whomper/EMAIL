@@ -221,11 +221,137 @@ static MSG *missing_note(HDR *h, ACCOUNT *a)
 	return m;
 }
 
+/* ---------------- people in the header lines ----------------
+ * From, To and Cc show each person by the name EContact has for them,
+ * else as the address; a name's address is its tooltip (tips[]) */
+typedef struct {
+	long at, n;			/* the name, in head */
+	char addr[PEOPLE_ADDR];
+} TIP;
+static TIP *tips;
+static int ntips, maxtips;
+static unsigned long head_date;
+
+static void add_people(SBUF *b, const char *label, const char *list)
+{
+	const char *p = list;
+	int first = 1;
+	if (!list[0])
+		return;
+	sb_adds(b, label);
+	while (*p) {
+		char one[256], mail[PEOPLE_ADDR];
+		const char *name;
+		short q = 0, ang = 0, n = 0;
+		while (*p == ' ' || *p == ',')
+			p++;
+		while (*p && (q || ang || *p != ',')) {
+			if (*p == '"')
+				q = !q;
+			else if (!q && *p == '<')
+				ang = 1;
+			else if (!q && *p == '>')
+				ang = 0;
+			if (n < (short)sizeof(one) - 1)
+				one[n++] = *p;
+			p++;
+		}
+		one[n] = 0;
+		if (!n)
+			continue;
+		addr_split(one, 0, 0, mail, sizeof(mail));
+		if (!first)
+			sb_adds(b, ", ");
+		first = 0;
+		if (!mail[0]) {
+			sb_adds(b, one);
+			continue;
+		}
+		name = people_name(mail);
+		if (name && *name) {
+			if (ntips == maxtips) {
+				TIP *more = realloc(tips, (maxtips + 8) * sizeof(TIP));
+				if (more) {
+					tips = more;
+					maxtips += 8;
+				}
+			}
+			if (ntips < maxtips) {
+				tips[ntips].at = b->len;
+				tips[ntips].n = (long)strlen(name);
+				str_copy(tips[ntips].addr, mail, sizeof(tips[0].addr));
+				ntips++;
+			}
+			sb_adds(b, name);
+		} else {
+			sb_adds(b, mail);
+		}
+	}
+	sb_adds(b, "\n");
+}
+
+/* the header lines of cur_msg, into head */
+static void make_head(void)
+{
+	SBUF hb;
+	free(head);
+	ntips = 0;
+	sb_init(&hb);
+	add_people(&hb, "From: ", cur_msg->from);
+	add_people(&hb, "To: ", cur_msg->to);
+	add_people(&hb, "Cc: ", cur_msg->cc);
+	if (head_date) {
+		char d[24];
+		date_str(head_date, d, sizeof(d), 1);
+		sb_printf(&hb, "Date: %s\n", d);
+	}
+	sb_adds(&hb, "Subject: ");
+	sb_adds(&hb, cur_msg->subject);
+	sb_adds(&hb, "\n");
+	head = sb_steal(&hb);
+}
+
+/* EContact's names came, or changed: the header lines again */
+void reader_names_came(void)
+{
+	long top = w_reader.top;
+	if (!cur_msg || !head)
+		return;
+	make_head();
+	layout();
+	win_scroll_to(&w_reader, top);
+	win_redraw(&w_reader, 0);
+}
+
+/* the tooltip over a name in the header lines: its address */
+int reader_tip(short mx, short my, char *out, int size)
+{
+	long i;
+	short col;
+	int k;
+	if (!cur_msg || !head || w_reader.work.w <= 0 || mx < w_reader.work.x || my < w_reader.work.y ||
+	    mx >= w_reader.work.x + w_reader.work.w || my >= w_reader.work.y + w_reader.work.h)
+		return 0;
+	i = w_reader.top + (my - w_reader.work.y) / ch;
+	if (i < 0 || i >= nlines || lines[i].kind != L_HEAD)
+		return 0;
+	col = (mx - w_reader.work.x - cw / 2) / cw;
+	if (col < 0 || col >= lines[i].n)
+		return 0;
+	for (k = 0; k < ntips; k++) {
+		long at = (lines[i].s - head) + col;
+		if (at >= tips[k].at && at < tips[k].at + tips[k].n) {
+			str_copy(out, tips[k].addr, size);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void reader_show(HDR *h)
 {
 	long len;
 	char *raw;
-	SBUF hb;
 	if (!cur_folder || !h)
 		return;
 	busy(1);
@@ -260,21 +386,8 @@ void reader_show(HDR *h)
 		return;
 	}
 show:
-	sb_init(&hb);
-	sb_printf(&hb, "From: %s\n", cur_msg->from);
-	if (cur_msg->to[0])
-		sb_printf(&hb, "To: %s\n", cur_msg->to);
-	if (cur_msg->cc[0])
-		sb_printf(&hb, "Cc: %s\n", cur_msg->cc);
-	if (h->date) {
-		char d[24];
-		date_str(h->date, d, sizeof(d), 1);
-		sb_printf(&hb, "Date: %s\n", d);
-	}
-	sb_adds(&hb, "Subject: ");
-	sb_adds(&hb, cur_msg->subject);
-	sb_adds(&hb, "\n");
-	head = sb_steal(&hb);
+	head_date = h->date;
+	make_head();
 	body = expand_tabs(cur_msg->text, cur_msg->textlen, &bodylen);
 	{
 		char t[100];

@@ -43,6 +43,18 @@ extern short vdi_h, cw, ch, scr_w, scr_h, desk_x, desk_y, desk_w, desk_h, planes
 extern short gl_wchar, gl_hchar;	/* the AES's system font cell (menus, dialogs) */
 extern short ap_id;
 
+/* EContact (main.c, common/ui/people_ask.c): names for addresses, and
+   people picked in its window */
+#include "people_ask.h"
+void ui_modal_message(const short *msg);	/* a modal loop's MU_MESAG */
+void editor_names_came(void);
+void editor_picked(const PERSON *list, int n);
+void reader_names_came(void);
+int  reader_tip(short mx, short my, char *out, int size);	/* a name's address: 1 */
+void list_names_came(void);
+/* the name to show for an address: EContact's, or the address itself */
+const char *person_shown(const char *addr);
+
 /* windows (win.c) */
 extern WIN w_folders, w_list, w_reader, w_editor;
 void win_open(WIN *w);

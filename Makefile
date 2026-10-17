@@ -48,7 +48,7 @@ HBSSLOBJ = $(patsubst $(BSSL)/src/%.c,$(OBJDIR)/hbssl/%.o,$(BSSLSRC))
 
 CORE    := util charset mime conn tls imap pop3 smtp store compose mail futil bidi secret ctime tz
 ATARI   := libc tos plat_tos net_tos sting gem dsprsa crash
-UI      := main draw win folders list reader editor dialogs popup font about dsp theme help av alert mbar aboutbox iconify clip clipedit dd busy
+UI      := main draw win folders list reader editor dialogs popup font about dsp theme help av alert mbar aboutbox iconify clip clipedit dd busy people_ask
 
 OBJDIR  := build
 OBJS    := $(OBJDIR)/crt0.o $(OBJDIR)/sting_s.o $(OBJDIR)/nf.o $(OBJDIR)/crash_s.o \
@@ -114,6 +114,15 @@ $(OBJDIR)/crash_s.o: common/atari/crash.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
 $(OBJDIR)/nf.o: common/atari/nf.S | $(OBJDIR)
 	$(CC) -m68000 -c -o $@ $<
+
+# a stand-in for EContact's answering side, for tests/hatari/people_test.py
+# (never released)
+FAKEC   := crt0 gem libc tos av people_ask
+$(OBJDIR)/fakecontact.acc: tests/atari/fakecontact.c $(addprefix $(OBJDIR)/,$(addsuffix .o,$(FAKEC))) $(OBJDIR)/nf.o
+	$(CC) $(CFLAGS) -c -o $(OBJDIR)/fakecontact.o $<
+	$(CC) $(LDFLAGS) -o $(OBJDIR)/fakecontact.elf $(OBJDIR)/fakecontact.o \
+		$(addprefix $(OBJDIR)/,$(addsuffix .o,$(FAKEC))) $(OBJDIR)/nf.o -lgcc
+	python3 common/tools/elf2tos.py $(OBJDIR)/fakecontact.elf $@
 
 $(OBJDIR) binary:
 	mkdir -p $@

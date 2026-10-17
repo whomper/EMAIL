@@ -349,7 +349,10 @@ static short form_loop(short start)
 			next = 0;
 			objc_edit(tree, edit, 0, &idx, ED_INIT);
 		}
-		evnt_multi_(MU_KEYBD | MU_BUTTON, 2, 1, 1, 0, m, &e);
+		/* messages too: EContact's answers can't wait (the guidelines, 4.1) */
+		evnt_multi_(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER, 2, 1, 1, 250, m, &e);
+		if (e.which & MU_MESAG)
+			ui_modal_message(m);
 		if (e.which & MU_KEYBD) {
 			PWFIELD *p = pw_of(edit);
 			short scan = KEY_SCAN(e.kreturn);

@@ -320,10 +320,18 @@ static void draw(WIN *w, GRECT *clip)
 		} else {
 			text_at(x0, y, marks, 2, 2, fl & ~TX_BOLD);
 		}
-		/* "Name <a@b>" shows as Name */
-		addr_split(who ? who : "", name, sizeof(name), 0, 0);
-		if (!name[0])
-			addr_split(who ? who : "", 0, 0, name, sizeof(name));
+		/* "Name <a@b>" shows as the name EContact has for a@b, else as
+		   Name, else as a@b */
+		{
+			char mail[PEOPLE_ADDR];
+			const char *known;
+			addr_split(who ? who : "", name, sizeof(name), mail, sizeof(mail));
+			known = mail[0] ? people_name(mail) : 0;
+			if (known && *known)
+				str_copy(name, known, sizeof(name));
+			else if (!name[0])
+				str_copy(name, mail, sizeof(name));
+		}
 		text_at(x0 + MK * cw, y, name, strlen(name), c_from, fl | TX_RIGHT);
 		text_at(x0 + (MK + 1 + c_from) * cw, y, h->subject, strlen(h->subject), c_subj - 1, fl | TX_RIGHT);
 		date_str(h->date, date, sizeof(date), 1);
@@ -581,4 +589,11 @@ void list_init(void)
 	w_list.rclick = rclick;
 	w_list.key = key;
 	strcpy(w_list.title, "Messages");
+}
+
+/* EContact's names came, or changed */
+void list_names_came(void)
+{
+	if (cur_folder)
+		win_redraw(&w_list, 0);
 }

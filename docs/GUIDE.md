@@ -32,7 +32,7 @@ keeps everything next to itself:
 C:\EMAIL\EMAIL.PRG      the program
 C:\EMAIL\EMAIL.INF      settings and accounts (each setting has a note above it)
 C:\EMAIL\EMAIL.KEY      the key the passwords in EMAIL.INF are encrypted with
-C:\EMAIL\ADDRESS.TXT   address book
+C:\EMAIL\ADDRESS.TXT   the addresses you wrote to (Ctrl+B without EContact)
 C:\EMAIL\EMAIL.LOG      protocol log, when switched on
 C:\EMAIL\CRASH.LOG      what happened, if EMail ever crashes
 C:\EMAIL\CACERT.PEM    root certificates, for Falcon mode only
@@ -247,9 +247,18 @@ your text...
 
 - Several addresses are separated by commas. Add a `Bcc:` line for
   hidden copies.
+- **People show by name.** On the To:, Cc: and Bcc: lines each person
+  shows framed, by the name EContact has for them, or as the address when
+  EContact doesn't know it; rest the mouse on a name to see the address.
+  The one the cursor is in shows as typed, to change it: click a name to
+  change that one.
 - Tab jumps to the next header line and, from the last one, into the text.
-- Ctrl+B (Message > Address book) adds an address you wrote to before.
-  With no message open, it starts a new one to the address you pick.
+- **Ctrl+B (Address book)** opens EContact's window to choose people or a
+  group; they go on the To: line (or the Cc: or Bcc: line the cursor is
+  on). A name begun on the line is what EContact searches for, and is
+  replaced by the people chosen. When EContact isn't loaded, Ctrl+B offers
+  the addresses you wrote to before (ADDRESS.TXT). With no message open,
+  it starts a new one.
 - Ctrl+T (Message > Attach file) adds an `Attach:` line; you can also
   type one. The file selector picks one file at a time: to attach
   several at once, drop them on EMail from the desktop (see below).
@@ -263,7 +272,15 @@ References). Forwarding a message with attachments attaches the original.
 
 ## From other programs
 
-**mail** in EContact (the AERA address book) opens a new message to the
+**EContact**, the AERA address book, is EMail's address book when it is
+loaded (as the accessory, or alongside under MiNT or MagiC). EMail asks it
+for the names behind the addresses it shows: in the list, in the From:,
+To: and Cc: lines of a message (a name's tooltip is its address) and when
+writing. Nothing is copied between their folders. Without EContact,
+EMail shows the addresses as they are (the list keeps the name the
+message gives).
+
+**mail** in EContact opens a new message to the
 person or group you chose. Any program, or a desktop such as Thing,
 jinnee or Gemini, can do the same with the AV protocol's VA_START:
 

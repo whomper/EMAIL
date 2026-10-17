@@ -109,7 +109,9 @@ emulation; details in [tools/tlsbench](tools/tlsbench/README.md).
 - POP3 that downloads into local folders and never fetches a message twice
 - SMTP with login (AUTH PLAIN/LOGIN)
 - Reply, reply to all, forward (with the original's attachments), flags, move, delete to Trash, mark a
-  whole folder read, address book, a two-line signature
+  whole folder read, a two-line signature
+- People by name from EContact, the AERA address book: in the list, the message and the To: line,
+  with the address in a tooltip; Ctrl+B picks people and groups in EContact's window
 - Attachments: save them with the file selector; attach files when writing
 - HTML-only mail shown as text
 - Dates with the year, numbers with thousands separators

@@ -328,6 +328,53 @@ static ACCOUNT *account_for_new(void)
    another program: "mailto:..." starts a new message; file names are
    attached to the message being written, or to a new one; nothing brings
    the window to the front */
+/* ---------------- EContact (the guidelines, 4.1) ----------------
+ * People are shown by the names EContact has for them (people_ask.c asks
+ * it in PEOPLE messages), and picked in its window */
+const char *person_shown(const char *addr)
+{
+	const char *n = people_name(addr);
+	return n && *n ? n : addr;
+}
+
+static void names_came(void)
+{
+	editor_names_came();
+	reader_names_came();
+	list_names_came();
+}
+
+static void picked(const PERSON *list, int n)
+{
+	editor_picked(list, n);
+}
+
+/* a modal loop's messages (a dialog's, the font list's): PEOPLE is read
+   at once, as the guidelines ask, and the rest wait for the main loop */
+static short kept[8][8];
+static int nkept;
+static char *kept_start;		/* a VA_START that came meanwhile */
+
+void ui_modal_message(const short *msg)
+{
+	const char *s;
+	switch (av_message(msg, &s)) {
+	case AV_PEOPLE:
+		people_message(s, msg[1]);
+		break;
+	case AV_START:
+		if (!kept_start)
+			kept_start = strdup(s);
+		break;
+	case AV_DONE:
+		break;
+	default:
+		if (nkept < 8)
+			memcpy(kept[nkept++], msg, sizeof(kept[0]));
+	}
+	people_poll();
+}
+
 static void av_start(const char *s)
 {
 	char path[200];
@@ -828,7 +875,8 @@ static void tip_show(void)
 	short n;
 	GRECT r, scr;
 	tip_tried = 1;
-	if (!editor_tip(hover_x, hover_y, text, sizeof(text)))
+	if (!editor_tip(hover_x, hover_y, text, sizeof(text)) &&
+	    !(wind_find(hover_x, hover_y) == main_h && reader_tip(hover_x, hover_y, text, sizeof(text))))
 		return;
 	n = (short)strlen(text);
 	if (n > 60)
@@ -1309,6 +1357,7 @@ int main(void)
 	crash_install(dir, "EMail", mail_version);
 	help_init();			/* memory the help viewer may read */
 	av_init("EMAIL");		/* the desktop's AV server, if there is one */
+	people_init(64, 0, names_came, picked);	/* names from EContact */
 	crash_cleanup = crash_quit;
 	crash_report = conn_log_append;	/* the report in the protocol log too */
 	if (store_plain_passwords && !store_lost_passwords)
@@ -1369,8 +1418,20 @@ int main(void)
 		short which, hovering = !tip_tried && hover_x >= 0;
 		conn_stop = 0;		/* a stop is for one operation */
 		/* a key typed while busy comes first, as if typed now */
-		which = busy_key(&ev) ? MU_KEYBD : evnt_multi_(MU_MESAG | MU_KEYBD | MU_BUTTON | MU_TIMER | MU_M1,
-								 0x101, 3, 0, hovering ? 100 : 1000, msg, &ev);
+		if (kept_start) {		/* what came during a dialog */
+			char *v = kept_start;
+			kept_start = 0;
+			av_start(v);
+			free(v);
+		}
+		if (nkept) {
+			memcpy(msg, kept[0], sizeof(kept[0]));
+			memmove(kept[0], kept[1], --nkept * sizeof(kept[0]));
+			which = MU_MESAG;
+		} else {
+			which = busy_key(&ev) ? MU_KEYBD : evnt_multi_(MU_MESAG | MU_KEYBD | MU_BUTTON | MU_TIMER | MU_M1,
+									 0x101, 3, 0, hovering ? 100 : 1000, msg, &ev);
+		}
 		if (which & MU_M1) {
 			win_hover(ev.mx, ev.my);
 			hover_x = ev.mx;
@@ -1399,10 +1460,12 @@ int main(void)
 				case DD_FILES: av_start(d.data); break;	/* as VA_START's */
 				case DD_TEXT: drop_text(d.data); break;
 				case DD_NONE:
-					if (av_message(msg, &va) == AV_START)
-						av_start(va);
-					else
-						win_message(msg);
+					switch (av_message(msg, &va)) {
+					case AV_START: av_start(va); break;
+					case AV_PEOPLE: people_message(va, msg[1]); break;
+					case AV_DONE: break;
+					default: win_message(msg);
+					}
 				}
 				dd_done(&d);
 			}
@@ -1437,6 +1500,7 @@ int main(void)
 			cmd_check_all();
 			quiet_check = 0;
 		}
+		people_poll();		/* the names asked for while drawing go out */
 	}
 
 	if (mail_flags_pending(cur_folder)) {

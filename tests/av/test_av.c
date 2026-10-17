@@ -19,6 +19,8 @@ static const char *running[] = { 0, "EMAIL   ", "THING   ", 0 };	/* by id */
 static int failed, checks;
 
 long get_cookie(long id) { (void)id; return 0; }		/* plain TOS */
+static unsigned long now_ms = 1000;
+unsigned long tos_ms(void) { return now_ms; }
 void *Mxalloc(long size, short mode) { (void)size; (void)mode; return 0; }
 short appl_id(void) { return 1; }
 
@@ -209,6 +211,40 @@ int main(void)
 	      !strcmp(ptr(sent[3], sent[4]), text) && ptr(sent[3], sent[4]) != text,
 	      "av_send: VA_START with a copy of the text");
 	check(av_send("EMAIL   ", longer) && strlen(ptr(sent[3], sent[4])) == 1023, "av_send: cut to 1023");
+
+	/* PEOPLE out: one at a time, answered with AV_STARTED, lost after 3 s */
+	writes = 0;
+	check(av_people(-1, "names:EMAIL a@b") == -1 && writes == 0, "PEOPLE to no program: -1");
+	check(av_people(1, "names:EMAIL a@b") == 1 && writes == 1 && sent_to == 1 && sent[0] == 0x4E43 &&
+	      sent[1] == 1 && !strcmp(ptr(sent[3], sent[4]), "names:EMAIL a@b"), "PEOPLE: the string, as VA_START's");
+	{
+		short ack[8] = { 0x4738, 1, 0, 0, 0, 0, 0, 0 }, other[8] = { 0x4738, 1, 0, 0, 0, 0, 0, 0 };
+		const char *s, *mine = ptr(sent[3], sent[4]);
+		ack[3] = sent[3];
+		ack[4] = sent[4];
+		check(av_people(1, "names:EMAIL c@d") == 0 && writes == 1, "PEOPLE: the next waits for AV_STARTED");
+		check(av_message(other, &s) == AV_NONE && !av_people_ready(), "an AV_STARTED for something else isn't ours");
+		check(av_message(ack, &s) == AV_DONE && av_people_ready(), "AV_STARTED for our PEOPLE: the next may go");
+		check(av_people(1, "names:EMAIL c@d") == 1 && writes == 2, "and it goes");
+		now_ms += 2900;
+		check(!av_people_ready() && av_people_lost() == 0, "2.9 s without an answer: still waiting");
+		now_ms += 200;
+		check(av_people_ready() && av_people_lost() == 1, "3 s: counted lost, the next may go");
+		(void)mine;
+	}
+	/* PEOPLE in: handed over as AV_PEOPLE, answered with AV_STARTED */
+	{
+		short msg[8] = { 0x4E43, 3, 0, 0, 0, 0, 0, 0 };
+		const char *s = 0, *text2 = "names:\na@b\tAnn\n";
+		msg[3] = (short)((unsigned long)text2 >> 16);
+		msg[4] = (short)(unsigned long)text2;
+		writes = 0;
+		check(av_message(msg, &s) == AV_PEOPLE && s && !strcmp(s, text2), "PEOPLE in: AV_PEOPLE with the string");
+		check(writes == 1 && sent_to == 3 && sent[0] == 0x4738 && sent[3] == msg[3] && sent[4] == msg[4],
+		      "PEOPLE in: AV_STARTED to the sender");
+	}
+	av_init("EMAIL|EMAILST");
+	check(!strcmp(av_name(), "EMAIL"), "av_name: our AES name without padding");
 
 	/* the command line */
 	basepage[0x80] = 10;

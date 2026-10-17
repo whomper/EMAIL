@@ -177,7 +177,7 @@ the heap's structure checked. `make prg` and `run.py etos512us.img` run `HEAPT.P
 something has set MFP timer C faster and still calls TOS's handler each time. On Erez's Falcon the
 counter runs at 312 Hz, so EFTP showed a 16-second transfer as 25 and its speeds 1.56 times too low.
 At its first call `tos_ms()` measures the counter against timer C's own count-down, which runs off the
-MFP's crystal however the timer is set, for 20 of the counter's steps (100 ms when all is well); more
+MFP's crystal however the timer is set, for 6 of the counter's steps (30 ms when all is well, busy, once per run); more
 than 3% off, it scales its times. `tos_clock()` is `""` on a true clock, else the line for an app's log
 ("the 200 Hz clock runs at 312.5 Hz: times corrected"). The code is EFTP's (whomper/EFTP a1e3b44).
 An app's `pf_ms()` becomes `return tos_ms();`.
@@ -190,6 +190,38 @@ every app, and `tos_ms()` dropped its correction.
 `tests/clock`: `make prg` and `run.py etos512us.img` run `CLOCKT.PRG` in Hatari on an ST and a Falcon,
 once with timer C at 312 Hz (a file `C:\FASTCLK`) and once at 200 Hz, and time the 8 seconds it counts
 by `tos_ms()` with the build machine's clock: 8.04 and 8.00 s on the ST, 8.00 and 7.94 s on the Falcon.
+
+## Background work (16 Oct 2026)
+
+`ui/bgwork.c` lets an accessory, or a program, do background work without making the machine feel
+slow (guideline 2.2, "A quiet start"). Work waits for its start (`START=` in the INF: `now`,
+`opened`, or seconds after boot; the family's default is 60 s), runs in slices of 40 ms (80 ms on a
+68000) with an event call between them, rests for 2 s after the mouse moves or a key or button is
+pressed or when the program in front keeps the machine, and stops while the app's program edition
+runs. It allocates nothing, so an accessory may use it at any time. Built with `-DAES_PROFILE`,
+`atari/gem.c` reports every stretch between event calls over 50 ms to the emulator's console
+(`AESGAP <ms> ms <tag>`).
+
+`tests/bgwork`: `make test` checks the rules on the build machine (four planted bugs, all caught);
+`make prg` and `run.py etos512us.img` run `BGT.PRG` in Hatari: 300 ms of work in one go shows as
+300 ms, and 3 s of work through bgwork never held the machine longer than 85 ms on an ST (80 ms
+slices) and 40 ms on a Falcon (40 ms slices).
+
+## People from EContact (17 Oct 2026)
+
+EMail and ECal show people by name and let the user pick them in EContact by asking EContact, with
+the family's one message besides the AV protocol's, PEOPLE (0x4E43, guideline 4.1). CONTACTS.TXT
+and EContact's integration patches go; nothing reads another app's files.
+- `ui/av.c`: `av_people(id, text)` sends a PEOPLE string (laid out as VA_START, answered with
+  AV_STARTED, one at a time, lost after 3 s); `av_message()` hands PEOPLE strings over as
+  `AV_PEOPLE`; `av_name()` is the name the AES knows us by.
+- `ui/people_ask.c`: the asker's side (`people_name(addr)` gives the name at once, or 0 while it is
+  being asked; `people_pick()`; `people_message()`; `people_poll()` each turn; a callback when names
+  come or change) and EContact's (`people_question()`, `people_next()`, `people_answer()`, which cuts
+  answers into whole commands of at most 1 KB). Memory is taken once, in `people_init()`.
+
+`tests/people`: `make test`, the asker against a pretend EContact and EContact's side (seven planted
+bugs, all caught); `tests/av` checks PEOPLE in and out.
 
 ## Coming next
 
